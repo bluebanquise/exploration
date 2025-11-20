@@ -1,0 +1,7 @@
+---
+- name: Test
+  hosts: 127.0.0.1
+
+  tasks:
+  - debug:
+      msg: "coucou"

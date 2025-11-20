@@ -1,0 +1,20 @@
+# General configuration
+port: 7777
+host: 0.0.0.0
+debug: True
+
+# Allowed address
+allowed_address:
+  - 127.0.0.1
+
+# Tasks
+tasks:
+  test:
+    allowed_values:
+      node:
+        - c001
+    steps:
+      - command: echo coucou
+      - command: echo %%node%%
+      - command: haha
+        exit_code: 127
