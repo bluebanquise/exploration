@@ -9,6 +9,15 @@ ubuntu:
         sudo mount ubuntu-24.04-live-server-amd64.iso /mnt
         sudo cp -a /mnt/* iso/
         sudo umount /mnt
+    aarch64:
+      url: https://releases.ubuntu.com/24.04.2/ubuntu-24.04.2-live-server-arm64.iso
+      checksum: d6dab0c3a657988501b4bd76f1297c053df710e06e0c3aece60dead24f270b4d
+      iso_file_name: ubuntu-24.04-live-server-arm64.iso
+      script: |
+        sudo mkdir iso
+        sudo mount ubuntu-24.04-live-server-arm64.iso /mnt
+        sudo cp -a /mnt/* iso/
+        sudo umount /mnt
   "22.04":
     x86_64:
       url: https://releases.ubuntu.com/jammy/ubuntu-22.04.5-live-server-amd64.iso
