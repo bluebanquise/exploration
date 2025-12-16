@@ -1,0 +1,60 @@
+34.29.184.37:
+  errors: false
+  healthchecks:
+  - name: Check scratch is mounted
+    stdout: 'Filesystem     1K-blocks      Used Available Use% Mounted on
+
+      /dev/root      711181476 364804368 346360724  52% /
+
+      tmpfs           16431732       252  16431480   1% /dev/shm
+
+      tmpfs            6572696      1728   6570968   1% /run
+
+      tmpfs               5120         0      5120   0% /run/lock
+
+      efivarfs              56        24        27  48% /sys/firmware/efi/efivars
+
+      tmpfs           16431732       432  16431300   1% /run/qemu
+
+      /dev/sda15        106858      6194    100665   6% /boot/efi
+
+      tmpfs            3286344        68   3286276   1% /run/user/1009'
+    stderr: ''
+    error: false
+  - name: Check no errors on ib device
+    stdout: 'PRETTY_NAME="Ubuntu 22.04.5 LTS"
+
+      NAME="Ubuntu"
+
+      VERSION_ID="22.04"
+
+      VERSION="22.04.5 LTS (Jammy Jellyfish)"
+
+      VERSION_CODENAME=jammy
+
+      ID=ubuntu
+
+      ID_LIKE=debian
+
+      HOME_URL="https://www.ubuntu.com/"
+
+      SUPPORT_URL="https://help.ubuntu.com/"
+
+      BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+
+      PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+
+      UBUNTU_CODENAME=jammy'
+    stderr: ''
+    error: false
+c002:
+  errors: true
+  healthchecks:
+  - name: Check scratch is mounted
+    stdout: ''
+    stderr: 'SSH connection failed: [Errno -2] Name or service not known'
+    error: true
+  - name: Check no errors on ib device
+    stdout: ''
+    stderr: 'SSH connection failed: [Errno -2] Name or service not known'
+    error: true
