@@ -1,0 +1,4 @@
+inventory:
+  default_group: compute
+monitoring:
+  interval: 30

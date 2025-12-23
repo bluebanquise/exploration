@@ -1,0 +1,3 @@
+ui_menu:
+  - title: "List nodes"
+    path: "list"

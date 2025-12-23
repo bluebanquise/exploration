@@ -10,6 +10,8 @@ import yaml
 import paramiko
 from dask.distributed import Client, as_completed
 
+import subprocess
+
 CONFIG_PATH = "/etc/bluebanquise/bluebanquise-healtchecker/configuration.yaml"
 
 
@@ -48,17 +50,21 @@ def merge_groups_into_hosts(hosts_config: dict, groups_config: dict) -> dict:
     for group_name, group in groups_config.items():
         group_hosts = group.get("hosts", [])
         group_checks = group.get("healthchecks", [])
+        group_triggers = group.get("on_error_triggers", [])
 
         for host in group_hosts:
             if host not in merged:
-                merged[host] = {"healthchecks": []}
+                merged[host] = {"healthchecks": [], "on_error_triggers": []}
 
-            # Ensure host has a healthchecks list
-            if "healthchecks" not in merged[host]:
-                merged[host]["healthchecks"] = []
+            # Ensure lists exist
+            merged[host].setdefault("healthchecks", [])
+            merged[host].setdefault("on_error_triggers", [])
 
             # Append group healthchecks
             merged[host]["healthchecks"].extend(group_checks)
+
+            # Append group triggers
+            merged[host]["on_error_triggers"].extend(group_triggers)
 
     return merged
 
@@ -232,6 +238,36 @@ def send_alert_email(subject: str, body: str, config: dict) -> None:
 
 
 # -----------------------------
+# Errors trigger
+# -----------------------------
+
+
+def run_error_triggers(host: str, triggers: list):
+    for trig in triggers:
+        name = trig.get("name", "Unnamed trigger")
+        cmd = trig.get("command", "").replace("%%host%%", host)
+
+        if not cmd:
+            print(f"[TRIGGER] Skipping empty trigger for {host}")
+            continue
+
+        print(f"[TRIGGER] Executing '{name}' for {host}: {cmd}")
+
+        try:
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            print(f"[TRIGGER] stdout: {result.stdout.strip()}")
+            print(f"[TRIGGER] stderr: {result.stderr.strip()}")
+        except Exception as e:
+            print(f"[TRIGGER] ERROR running trigger '{name}' for {host}: {e}")
+
+
+# -----------------------------
 # Config
 # -----------------------------
 
@@ -279,6 +315,20 @@ def main():
     except Exception as e:
         print(f"Failed to read hosts file {hosts_file}: {e}", file=sys.stderr)
         sys.exit(1)
+
+    # Load groups configuration (optional)
+    groups_file = config.get("groups_file")
+    if groups_file:
+        try:
+            groups_config = load_yaml(groups_file)
+        except Exception as e:
+            print(f"Failed to read groups file {groups_file}: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        groups_config = {}
+
+    # Merge groups into hosts
+    hosts_config = merge_groups_into_hosts(hosts_config, groups_config)
 
     if not isinstance(hosts_config, dict) or not hosts_config:
         print("Hosts file does not define any hosts", file=sys.stderr)
@@ -381,6 +431,14 @@ def main():
                 subject = f"[RECOVERY] Host {host} is back to OK"
                 body = f"The host {host} has recovered and is now OK."
                 send_alert_email(subject, body, config)
+
+            # ERROR transition: run triggers
+            if now_errors and not prev_errors:
+                triggers = hosts_config.get(host, {}).get("on_error_triggers", [])
+                if triggers:
+                    run_error_triggers(host, triggers)
+
+                
 
         previous_results = results
 
