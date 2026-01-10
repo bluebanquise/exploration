@@ -1,0 +1,149 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Host Details: {{ hostname }}</h1>
+
+<div id="host-details" class="box" style="max-width: 700px;">
+  Loading...
+</div>
+
+<script>
+async function loadDetails() {
+    const data = await apiRequest("GET", "/api/v1/inventory/host/{{ hostname }}");
+    const host = data.host["{{ hostname }}"];
+
+    const container = document.getElementById("host-details");
+
+    container.innerHTML = `
+        <div class="field">
+            <label class="label">Hostname</label>
+            <input class="input" type="text" value="{{ hostname }}" disabled>
+        </div>
+
+        <div class="field">
+            <label class="label">Alias</label>
+            <input id="alias" class="input" type="text" value="${host.alias || ""}">
+        </div>
+
+        <hr>
+
+        <h2 class="subtitle">BMC</h2>
+
+        <div class="field">
+            <label class="label">BMC Name</label>
+            <input id="bmc_name" class="input" type="text" value="${host.bmc?.name || ""}">
+        </div>
+
+        <div class="field">
+            <label class="label">BMC Network</label>
+            <input id="bmc_network" class="input" type="text" value="${host.bmc?.network || ""}">
+        </div>
+
+        <div class="field">
+            <label class="label">BMC MAC</label>
+            <input id="bmc_mac" class="input" type="text" value="${host.bmc?.mac || ""}">
+        </div>
+
+        <div class="field">
+            <label class="label">BMC IPv4</label>
+            <input id="bmc_ip4" class="input" type="text" value="${host.bmc?.ip4 || ""}">
+        </div>
+
+        <hr>
+
+        <h2 class="subtitle">Network Interfaces</h2>
+
+        <div id="interfaces-container"></div>
+
+        <button class="button is-small is-link" onclick="addInterface()">Add new network interface</button>
+
+        <hr>
+
+        <button class="button is-primary" onclick="saveHost()">Save</button>
+    `;
+
+    // Load existing interfaces
+    if (host.network_interfaces) {
+        for (const iface of host.network_interfaces) {
+            addInterface(iface);
+        }
+    }
+}
+
+function addInterface(initial = {}) {
+    const container = document.getElementById("interfaces-container");
+
+    const idx = container.children.length;
+
+    const div = document.createElement("div");
+    div.className = "box";
+    div.style = "margin-bottom: 1rem;";
+
+    div.innerHTML = `
+        <h3 class="subtitle">Interface #${idx + 1}</h3>
+
+        <div class="field">
+            <label class="label">Interface Name</label>
+            <input class="input iface-interface" type="text" value="${initial.interface || ""}">
+        </div>
+
+        <div class="field">
+            <label class="label">Network</label>
+            <input class="input iface-network" type="text" value="${initial.network || ""}">
+        </div>
+
+        <div class="field">
+            <label class="label">MAC</label>
+            <input class="input iface-mac" type="text" value="${initial.mac || ""}">
+        </div>
+
+        <div class="field">
+            <label class="label">IPv4</label>
+            <input class="input iface-ip4" type="text" value="${initial.ip4 || ""}">
+        </div>
+
+        <button class="button is-small is-danger" onclick="deleteInterface(this)">Delete interface</button>
+    `;
+
+    container.appendChild(div);
+}
+
+function deleteInterface(button) {
+    const box = button.closest(".box");
+    box.remove();
+}
+
+async function saveHost() {
+    const alias = document.getElementById("alias").value.trim();
+
+    const bmc = {
+        name: document.getElementById("bmc_name").value.trim(),
+        network: document.getElementById("bmc_network").value.trim(),
+        mac: document.getElementById("bmc_mac").value.trim(),
+        ip4: document.getElementById("bmc_ip4").value.trim(),
+    };
+
+    const interfaces = [];
+    const container = document.getElementById("interfaces-container");
+
+    for (const box of container.children) {
+        interfaces.push({
+            interface: box.querySelector(".iface-interface").value.trim(),
+            network: box.querySelector(".iface-network").value.trim(),
+            mac: box.querySelector(".iface-mac").value.trim(),
+            ip4: box.querySelector(".iface-ip4").value.trim(),
+        });
+    }
+
+    await apiRequest("PUT", "/api/v1/inventory/host/{{ hostname }}", {
+        alias: alias,
+        bmc: bmc,
+        network_interfaces: interfaces
+    });
+
+    window.location.reload();
+}
+
+loadDetails();
+</script>
+{% endblock %}

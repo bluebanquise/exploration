@@ -1,0 +1,9 @@
+inventory_path: /home/oxedions/gits/exploration/overlord/test_inventory
+working_folder: /home/oxedions/gits/exploration/overlord/workdir
+log_file: /var/log/bluebanquise-overlord.log
+log_level: INFO
+plugins_path: ./plugins
+
+ui:
+  host: 0.0.0.0
+  port: 5000

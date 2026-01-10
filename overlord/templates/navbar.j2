@@ -1,0 +1,19 @@
+<nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="/">
+      <strong>Overlord</strong>
+    </a>
+  </div>
+
+  <div class="navbar-menu">
+    <div class="navbar-start">
+      {% for section, content in ui_skeleton.items() %}
+        {% set is_active = (section == current_section) %}
+        <a class="navbar-item {% if is_active %}is-active{% endif %}"
+           href="{{ '/' + section }}">
+          {{ section }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</nav>

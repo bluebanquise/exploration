@@ -1,0 +1,19 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Delete Host: {{ hostname }}</h1>
+
+<div class="notification is-warning">
+  Are you sure you want to delete <strong>{{ hostname }}</strong>?
+</div>
+
+<button class="button is-danger" onclick="deleteHost()">Delete</button>
+<a class="button" href="/inventory/host/list">Cancel</a>
+
+<script>
+async function deleteHost() {
+    await apiRequest("DELETE", "/api/v1/inventory/host/{{ hostname }}");
+    window.location.href = "/inventory/host/list";
+}
+</script>
+{% endblock %}
