@@ -1,0 +1,19 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Delete Group: {{ name }}</h1>
+
+<div class="notification is-warning">
+  Are you sure you want to delete group <strong>{{ name }}</strong>?
+</div>
+
+<button class="button is-danger" onclick="deleteGroup()">Delete</button>
+<a class="button" href="/inventory/group/list">Cancel</a>
+
+<script>
+async function deleteGroup() {
+    await apiRequest("DELETE", "/api/v1/inventory/group/{{ name }}");
+    window.location.href = "/inventory/group/list";
+}
+</script>
+{% endblock %}

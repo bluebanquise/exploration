@@ -1,19 +1,62 @@
 {% extends "main.j2" %}
 
 {% block content %}
-<h1 class="title">Delete Host: {{ hostname }}</h1>
+<h1 class="title">Delete a host</h1>
 
-<div class="notification is-warning">
-  Are you sure you want to delete <strong>{{ hostname }}</strong>?
+<div class="field">
+  <label class="label">Select host to delete</label>
+  <div class="control">
+    <div class="select">
+      <select id="hostname-select">
+        <option value="">-- select a host --</option>
+      </select>
+    </div>
+  </div>
 </div>
 
-<button class="button is-danger" onclick="deleteHost()">Delete</button>
-<a class="button" href="/inventory/host/list">Cancel</a>
+<div class="field is-grouped">
+  <div class="control">
+    <button class="button is-danger" id="delete-button">Delete host</button>
+  </div>
+  <div class="control">
+    <a class="button is-light" href="{{ url_for('inventory_host.host_list_page') }}">Back to list</a>
+  </div>
+</div>
 
 <script>
-async function deleteHost() {
-    await apiRequest("DELETE", "/api/v1/inventory/host/{{ hostname }}");
-    window.location.href = "/inventory/host/list";
+document.getElementById("delete-button").addEventListener("click", async () => {
+    const select = document.getElementById("hostname-select");
+    const hostname = select.value;
+
+    if (!hostname) {
+        showNotification("is-danger", "Please select an host to delete");
+        return;
+    }
+
+    try {
+      await apiRequest("DELETE", `/api/v1/inventory/host/${hostname}`);
+      window.location.href = "/inventory/host/list";
+    } catch (e) {
+      console.error("Failed to delete host:", e);
+    }
+});
+
+async function loadHostsForDelete() {
+    const select = document.getElementById("hostname-select");
+    select.innerHTML = '<option value="">-- select a host --</option>';
+
+    const data = await apiRequest("GET", "/api/v1/inventory/host");
+
+    const hosts = data && data.hosts ? data.hosts : {};
+    for (const hostname of Object.keys(hosts)) {
+        const opt = document.createElement("option");
+        opt.value = hostname;
+        opt.textContent = hostname;
+        select.appendChild(opt);
+    }
 }
+
+document.addEventListener("DOMContentLoaded", loadHostsForDelete);
+
 </script>
 {% endblock %}

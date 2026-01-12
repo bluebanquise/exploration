@@ -10,7 +10,7 @@
 <script>
 async function loadDetails() {
     const data = await apiRequest("GET", "/api/v1/inventory/host/{{ hostname }}");
-    const host = data.host["{{ hostname }}"];
+    const host = data.hosts["{{ hostname }}"];
 
     const container = document.getElementById("host-details");
 

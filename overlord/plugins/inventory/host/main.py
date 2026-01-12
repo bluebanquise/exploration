@@ -1,13 +1,12 @@
 # plugins/inventory/host/main.py
 
 import json
-from typing import Any, Dict, List, Optional
 
-from inventory import AnsibleInventory
+from common.inventory import AnsibleInventory
+from common.plugin_base import BasePlugin
 
-
-class Plugin:
-    def __init__(self, action_args, inventory: AnsibleInventory, config, logger, global_args):
+class Plugin(BasePlugin):
+    def __init__(self, action_args, config, logger, global_args):
         """
         action_args: list of tokens, e.g. ["add", "c001", '{"c001": {"alias": "compute-1"}}']
         inventory: AnsibleInventory instance
@@ -15,94 +14,50 @@ class Plugin:
         logger: shared logger
         global_args: dict with context (diff, check, inventory_root, etc.)
         """
-        self.action_args: List[str] = action_args
-        self.inventory = inventory
-        self.config = config or {}
-        self.logger = logger
-        self.global_args = global_args
+        super().__init__(action_args, config, logger, global_args)
+      
+        # Load inventory
+        self.logger.debug("Loading inventory...")
+        self.inventory = AnsibleInventory(
+            inventory_root=self.global_args['inventory_root'],
+            working_folder=self.global_args['working_folder'],
+            diff=self.global_args['diff'],
+            check=self.global_args['check'],
+            logger=self.logger,
+        )
+        # self.logger.debug("Current inventory:" + str(self.inventory.show()))
 
+######################## CLI ENTRY POINT ########################
 
-    # Allow nested value update
-    def set_deep(self, data: dict, path: str, value: Any):
-        keys = path.split(".")
-        d = data
-        for k in keys[:-1]:
-            if k not in d or not isinstance(d[k], dict):
-                d[k] = {}
-            d = d[k]
-        d[keys[-1]] = value
-
-
-
-    # ---------------------
-    # Public entry points
-    # ---------------------
-
-    def run(self) -> Dict[str, Any]:
+    def cli_execute(self):
         """
         CLI entry: parse self.action_args, build a payload, and delegate to execute().
         """
+
+        self.logger.debug("Entering CLI host plugin")
+        ##################### CHECKS
+
+        # We define supported actions, to be filtered later
+        SUPPORTED_ACTIONS = ["list", "add", "get", "update", "delete"]
+        # Check there is action
         if not self.action_args:
-            return self._error("No action specified. Use: list|add|get|update|delete")
+            return self.api_error("No action specified. Use: " + str(SUPPORTED_ACTIONS))
 
         action = self.action_args[0]
-        try:
-            payload = self._parse_cli_payload(action, self.action_args[1:])
-        except ValueError as e:
-            return self._error(str(e))
+        # Check action is allowed by plugin
+        if action not in SUPPORTED_ACTIONS:
+            return api_error(f"Unsupported action '{action}'. Allowed actions: '{str(SUPPORTED_ACTIONS)}'")
 
-        try:
-            return self.execute(action, payload)
-        except Exception as e:
-            self.logger.exception("Error in host plugin")
-            return self._error(str(e))
 
-    def execute(self, action: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Programmatic entry: used by REST API.
-        payload structure depends on action:
+        ##################### FILTER ACTION AND BUILD PAYLOAD
 
-        - list: {}
-        - add: { "hosts": { "c001": { ... }, ... } }
-        - get: { "hostname": "c001" }
-        - update: { "hostname": "c001", "data": { ... } }
-        - delete: { "hostname": "c001" }
-        """
+        # Now we need to create the payload, it should be similar to something sent via HTML
+        # to have execute handle both HTML and CLI :)
+
         if action == "list":
-            return self._action_list(payload)
-        elif action == "add":
-            return self._action_add(payload)
-        elif action == "get":
-            return self._action_get(payload)
-        elif action == "update":
-            return self._action_update(payload)
-        elif action == "delete":
-            return self._action_delete(payload)
-        else:
-            return self._error(f"Unknown action: {action}. Use: list|add|get|update|delete")
+            payload = {}
 
-    # ---------------------
-    # Internal helpers
-    # ---------------------
-
-    def _ok(self, data: Optional[Dict[str, Any]] = None, message: Optional[str] = None) -> Dict[str, Any]:
-        res: Dict[str, Any] = {"status": "ok"}
-        if data is not None:
-            res["data"] = data
-        if message is not None:
-            res["message"] = message
-        return res
-
-    def _error(self, message: str) -> Dict[str, Any]:
-        return {"status": "error", "message": message}
-
-    def _parse_cli_payload(self, action: str, args: List[str]) -> Dict[str, Any]:
-        """
-        Convert CLI arguments into the generic payload format used by execute().
-        """
-        if action == "list":
-            return {}
-
+        args = self.action_args[1:]
         if action in ("add", "get", "update", "delete"):
             if not args:
                 raise ValueError(f"{action} requires at least HOSTNAME")
@@ -110,53 +65,52 @@ class Plugin:
             hostname = args[0]
 
             if action == "get" or action == "delete":
-                return {"hostname": hostname}
+                payload = {hostname}
 
-            if action == "add":
+            elif action == "add":
                 if len(args) < 2:
                     # No JSON provided: minimal data
-                    hosts = {hostname: {}}
+                    payload = {hostname: {}}
                 else:
-                    hosts = self._parse_add_json(hostname, args[1])
-                return {"hosts": hosts}
+                    # JSON, lets read it and inculde it as data to payload
+                    try:
+                        data = json.loads(args[1])
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f"Invalid JSON: {e}") from e
+                    payload = {hostname: data}
 
-            if action == "update":
+            elif action == "update":
                 if len(args) < 2:
-                    raise ValueError("update requires JSON or key=value pairs")
+                    raise ValueError("Update requires JSON or key=value pairs")
 
-                first_payload = args[1]
-                if first_payload.strip().startswith("{"):
-                    data = self._parse_update_json(hostname, first_payload)
-                else:
-                    data = self._parse_update_kv(args[1:])
-                return {"hostname": hostname, "data": data}
+                update_payload = args[1]
+                # User could provide both json or foo.stuff=bar
+                if update_payload.strip().startswith("{"):  # This is JSON, try to load it
+                    try:
+                        data = json.loads(update_payload)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f"Invalid JSON: {e}") from e
+                else:  # This is foo.stuff=bar, try to load it
+                    data = self.parse_update_kv(args[1:])
+                payload = {hostname: data}
+            else:
+                raise ValueError(f"Unknown action: {action}")
+                return self.api_error(str(f"Unknown action: {action}"))
 
-        raise ValueError(f"Unknown action: {action}")
 
-    def _parse_add_json(self, hostname: str, payload: str) -> Dict[str, Dict[str, Any]]:
+        ##################### EXECUTE
+
+        # Payload is ready, lets call main execute now
         try:
-            json_data = json.loads(payload)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON: {e}") from e
+            return self.execute(action, payload)
+        except Exception as e:
+            self.logger.exception("Error in host plugin")
+            return self.api_error(str(e))
 
-        if not isinstance(json_data, dict) or hostname not in json_data:
-            raise ValueError(f"JSON must be a dict with key '{hostname}'")
-
-        return json_data
-
-    def _parse_update_json(self, hostname: str, payload: str) -> Dict[str, Any]:
-        try:
-            json_data = json.loads(payload)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON: {e}") from e
-
-        if not isinstance(json_data, dict) or hostname not in json_data:
-            raise ValueError(f"JSON must be a dict with key '{hostname}'")
-
-        return json_data[hostname]
-
-    def _parse_update_kv(self, kv_args: List[str]) -> Dict[str, Any]:
-        data: Dict[str, Any] = {}
+    # Function to parse dot like dict path
+    # Can be improved later
+    def parse_update_kv(self, kv_args):
+        data = {}
         for kv in kv_args:
             if "=" not in kv:
                 raise ValueError(f"Invalid key=value pair: {kv}")
@@ -173,61 +127,72 @@ class Plugin:
         return data
 
 
-    # ---------------------
-    # Actions
-    # ---------------------
+######################## EXECUTE AND ACTIONS ########################
 
-    def _action_list(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, action, payload):
+        """
+        Programmatic entry: used by cli_run and REST API.
+        payload structure depends on action:
+
+        - list: {}
+        - add: { "c001": { ... } }
+        - get: { "c001" }
+        - update: { "c001": { ... } }
+        - delete: { "c001" }
+        """
+        
+        if action == "list":
+            return self.action_list(payload)
+        elif action == "add":
+            return self.action_add(payload)
+        elif action == "get":
+            return self.action_get(payload)
+        elif action == "update":
+            return self.action_update(payload)
+        elif action == "delete":
+            return self.action_delete(payload)
+
+
+    def action_list(self, payload):
         hosts = self.inventory.list_hosts()
-        return self._ok(data={"hosts": hosts})
+        return self.api_ok(data={"hosts": hosts})
 
-    def _action_add(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        hosts = payload.get("hosts") or {}
-        if not isinstance(hosts, dict) or not hosts:
-            return self._error("Payload must contain 'hosts' dict")
-
-        for hostname, host_data in hosts.items():
+    # Support for multiple add to be added in cli parse later
+    def action_add(self, payload):
+        for hostname, host_data in payload.items():
             self.inventory.add_host(hostname, host_data or {})
         self.inventory.save()
 
-        return self._ok(message=f"Added {len(hosts)} host(s)")
+        return self.api_ok(message=f"Added {len(payload)} host(s)")
 
-    def _action_get(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        hostname = payload.get("hostname")
-        if not hostname:
-            return self._error("hostname is required")
+    def action_get(self, payload):
+        output = {}
+        for hostname in payload:
+            host_data = self.inventory.get_host(hostname)
+            if host_data is None:
+                return self.api_error(f"Host {hostname} not found")
+            output[hostname] = host_data
 
-        host = self.inventory.get_host(hostname)
-        if host is None:
-            return self._error(f"Host {hostname} not found")
+        return self.api_ok(data={"hosts": output})
 
-        return self._ok(data={"host": {hostname: host}})
-
-    def _action_update(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        hostname = payload.get("hostname")
-        data = payload.get("data") or {}
-        if not hostname:
-            return self._error("hostname is required")
-        if not isinstance(data, dict) or not data:
-            return self._error("data must be a non-empty dict")
-
-        if self.inventory.get_host(hostname) is None:
-            return self._error(f"Host {hostname} not found")
-
-        self.inventory.update_host(hostname, data)
+    def action_update(self, payload):
+        for hostname, host_data in payload.items():
+            if not hostname:
+                return self.api_error("hostname is required")
+            if not isinstance(host_data, dict) or not host_data:
+                return self.api_error("data must be a non-empty dict")
+            if self.inventory.get_host(hostname) is None:
+                return self.api_error(f"Host {hostname} not found")
+            self.inventory.update_host(hostname, host_data)
         self.inventory.save()
 
-        return self._ok(message=f"Host {hostname} updated")
+        return self.api_ok(message=f"Host {hostname} updated")
 
-    def _action_delete(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        hostname = payload.get("hostname")
-        if not hostname:
-            return self._error("hostname is required")
-
-        if self.inventory.get_host(hostname) is None:
-            return self._error(f"Host {hostname} not found")
-
-        self.inventory.delete_host(hostname)
+    def action_delete(self, payload):
+        for hostname in payload:
+            if self.inventory.get_host(hostname) is None:
+                return self.api_error(f"Host {hostname} not found")
+            self.inventory.delete_host(hostname)
         self.inventory.save()
 
-        return self._ok(message=f"Host {hostname} deleted")
+        return self.api_ok(message=f"Host {hostname} deleted")

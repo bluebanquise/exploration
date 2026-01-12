@@ -4,13 +4,12 @@ import os
 import sys
 
 from flask import Flask
-from common import (
-    load_config,
-    configure_logging,
-    load_plugin_module,
-    deep_merge_ui_skeleton,
-)
-from inventory import AnsibleInventory
+
+from common.inventory import AnsibleInventory
+from common.files import load_config, load_yaml_file
+from common.logging import configure_logging
+from common.plugins import load_plugin_module, load_plugin_metadata
+from common.ui import deep_merge_ui_skeleton
 
 
 def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
@@ -38,10 +37,13 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
             template_dir = os.path.join(root, "templates")
             app.jinja_loader.searchpath.append(os.path.abspath(template_dir))
 
-    # Discover plugin UI blueprints
-    plugins_path = config.get("plugins_path", "./plugins")
-
+    # Discover plugin UI and API blueprints
     for root, dirs, files in os.walk(plugins_path):
+        # Load plugin config first
+        plugin_config = {}
+        if "config.yml" in files:
+            plugin_config_path = os.path.join(root, "config.yml")
+            plugin_config = load_yaml_file(plugin_config_path) or {}
         if "main_ui.py" in files:
             main_ui_path = os.path.join(root, "main_ui.py")
 
@@ -57,7 +59,8 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
 
             # Expect: module.blueprint and module.ui_integration
             blueprint = getattr(module, "blueprint", None)
-            ui_integration = getattr(module, "ui_integration", None)
+
+            ui_integration = plugin_config.get("ui_integration", None)
 
             if blueprint is None or ui_integration is None:
                 logger.warning(
@@ -74,6 +77,34 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
             deep_merge_ui_skeleton(skeleton, ui_integration)
 
             logger.debug("Loaded UI plugin from %s", main_ui_path)
+
+        if "main_api.py" in files:
+            main_api_path = os.path.join(root, "main_api.py")
+
+            # Build a unique module name from path
+            rel = os.path.relpath(main_api_path, plugins_path)
+            mod_name = "plugins_api_" + rel.replace(os.sep, "_").replace(".py", "")
+
+            try:
+                module = load_plugin_module(main_api_path, mod_name)
+            except Exception as e:
+                logger.error("Failed to load API module %s: %s", main_api_path, e)
+                continue
+
+            # Expect: module.blueprint and module.api_integration
+            blueprint = getattr(module, "blueprint", None)
+
+            if blueprint is None:
+                logger.warning(
+                    "API module %s does not expose both blueprint",
+                    main_api_path,
+                )
+                continue
+
+            # Register blueprint with no prefix; routes must be absolute in plugin
+            app.register_blueprint(blueprint)
+
+            logger.debug("Loaded API plugin from %s", main_api_path)
 
     @app.context_processor
     def inject_overlord_context():

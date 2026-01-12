@@ -1,6 +1,11 @@
 name: inventory_host
-title: Host Inventory
+title: Host inventory
+description: Manage hosts in the cluster inventory.
 version: "1.0.0"
+category: inventory
+
+api:
+  base_url: /api/v1/inventory/host
 
 ui_integration:
   inventory:
@@ -9,5 +14,5 @@ ui_integration:
         url: /inventory/host/list
       - name: Add new host
         url: /inventory/host/add
-      - name: Delete an Host
+      - name: Delete an host
         url: /inventory/host/delete

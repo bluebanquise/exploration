@@ -1,12 +1,9 @@
-{# plugins/inventory/host/templates/host/list.j2 #}
 {% extends "main.j2" %}
 
 {% block content %}
-<h1 class="title">Hosts</h1>
+<h1 class="title">Hosts coucou</h1>
 
-<div id="hosts-error" class="notification is-danger is-hidden"></div>
-
-<table class="table is-fullwidth is-striped" id="hosts-table">
+<table class="table is-fullwidth is-striped">
   <thead>
     <tr>
       <th>Hostname</th>
@@ -14,75 +11,35 @@
       <th>Actions</th>
     </tr>
   </thead>
-  <tbody></tbody>
+  <tbody id="host-table-body">
+  </tbody>
 </table>
 
-<div class="mt-4">
-  <a class="button is-primary" href="{{ url_for('inventory_host.host_add_page') }}">
-    Add new host
-  </a>
-</div>
-
 <script>
-async function loadHosts() {
-    const errorBox = document.getElementById("hosts-error");
-    const tbody = document.querySelector("#hosts-table tbody");
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const data = await apiRequest("GET", "/api/v1/inventory/host");
+    const hosts = (data && data.hosts) || {};
+    const tbody = document.getElementById("host-table-body");
     tbody.innerHTML = "";
-    errorBox.classList.add("is-hidden");
-    errorBox.textContent = "";
 
-    try {
-        const response = await fetch("/api/v1/inventory/host");
-        const result = await response.json();
+    Object.entries(hosts).forEach(([hostname, hostdata]) => {
+      const tr = document.createElement("tr");
 
-        if (!response.ok || result.status !== "ok") {
-            errorBox.textContent = result.message || "Failed to load hosts";
-            errorBox.classList.remove("is-hidden");
-            return;
-        }
+      tr.innerHTML = `
+        <td>${hostname}</td>
+        <td>${hostdata.alias || ""}</td>
+        <td>
+          <a class="button is-small is-info" href="/inventory/host/${hostname}">Details</a>
+          <a class="button is-small is-danger" href="/inventory/host/delete?hostname=${hostname}">Delete</a>
+        </td>
+      `;
 
-        const hosts = result.data && result.data.hosts ? result.data.hosts : {};
-        const entries = Object.entries(hosts);
-
-        if (entries.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 3;
-            td.textContent = "No hosts found.";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            return;
-        }
-
-        for (const [hostname, data] of entries) {
-            const tr = document.createElement("tr");
-
-            const tdName = document.createElement("td");
-            tdName.textContent = hostname;
-
-            const tdAlias = document.createElement("td");
-            tdAlias.textContent = (data && data.alias) || "";
-
-            const tdActions = document.createElement("td");
-            const link = document.createElement("a");
-            link.className = "button is-small is-info";
-            link.href = "/inventory/host/" + encodeURIComponent(hostname);
-            link.textContent = "View / Edit";
-            tdActions.appendChild(link);
-
-            tr.appendChild(tdName);
-            tr.appendChild(tdAlias);
-            tr.appendChild(tdActions);
-
-            tbody.appendChild(tr);
-        }
-    } catch (e) {
-        errorBox.textContent = "Error loading hosts: " + e;
-        errorBox.classList.remove("is-hidden");
-    }
-}
-
-document.addEventListener("DOMContentLoaded", loadHosts);
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    console.error("Failed to load hosts:", e);
+  }
+});
 </script>
-
 {% endblock %}

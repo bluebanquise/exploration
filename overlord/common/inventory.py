@@ -6,7 +6,7 @@ import tempfile
 import subprocess
 from typing import Any, Dict, List, Optional
 
-from common import load_yaml_file, dump_yaml_file, load_ini_file
+from common.files import load_yaml_file, dump_yaml_file, load_ini_file
 
 
 class AnsibleInventory:
@@ -138,8 +138,8 @@ class AnsibleInventory:
             raise ValueError(f"Host {name} already exists")
         self.hosts[name] = {
             "alias": data.get("alias"),
-            "network_interfaces": data.get("network_interfaces"),
-            "bmc": data.get("bmc"),
+            "network_interfaces": data.get("network_interfaces", []),
+            "bmc": data.get("bmc", {}),
             "vars": data.get("vars", {}),
         }
 

@@ -1,0 +1,49 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Groups</h1>
+
+<div class="mb-4">
+  <a class="button is-primary" href="/inventory/group/add">Add group</a>
+</div>
+
+<table class="table is-fullwidth is-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="group-table-body">
+    <!-- Filled by JS -->
+  </tbody>
+</table>
+
+<script>
+async function loadGroups() {
+    const data = await apiRequest("GET", "/api/v1/inventory/group");
+    const groups = data.groups || {};
+    const tbody = document.getElementById("group-table-body");
+    tbody.innerHTML = "";
+
+    for (const [name, g] of Object.entries(groups)) {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${name}</td>
+            <td>${g.group_type || ""}</td>
+            <td>
+                <a class="button is-small is-danger" href="/inventory/group/delete/${name}">
+                    Delete
+                </a>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    }
+}
+
+loadGroups();
+</script>
+{% endblock %}
