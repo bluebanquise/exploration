@@ -1,0 +1,43 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Create a new group</h1>
+
+<div class="box" style="max-width: 500px;">
+
+  <div class="field">
+    <label class="label">Group name</label>
+    <input id="group_name" class="input" type="text" placeholder="webservers">
+  </div>
+
+  <div class="field">
+    <label class="label">Group type</label>
+    <div class="select">
+      <select id="group_type">
+        <option value="function">Function group</option>
+        <option value="os">Operating System group</option>
+        <option value="hardware">Hardware group</option>
+        <option value="rack">Rack group</option>
+        <option value="custom">Custom group</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="button is-primary" onclick="goNext()">Continue</button>
+</div>
+
+<script>
+function goNext() {
+    const name = document.getElementById("group_name").value.trim();
+    const type = document.getElementById("group_type").value;
+
+    if (!name) {
+        showNotification("is-danger", "Group name is required");
+        return;
+    }
+
+    // Pass name via query string
+    window.location.href = `/inventory/group/add/${type}?name=${encodeURIComponent(name)}`;
+}
+</script>
+{% endblock %}

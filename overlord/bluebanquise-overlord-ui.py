@@ -106,6 +106,9 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
 
             logger.debug("Loaded API plugin from %s", main_api_path)
 
+    # This is a special move
+    # We can inject a dict into templates rendering context, this avoids to pass it all the time
+    # Super useful for us here
     @app.context_processor
     def inject_overlord_context():
         return {

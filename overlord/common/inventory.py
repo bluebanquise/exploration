@@ -162,7 +162,7 @@ class AnsibleInventory:
         del self.hosts[name]
 
     # -------------------------
-    # Group operations (basic)
+    # Group operations
     # -------------------------
 
     def list_groups(self) -> Dict[str, Dict[str, Any]]:
@@ -171,10 +171,13 @@ class AnsibleInventory:
     def get_group(self, name: str) -> Optional[Dict[str, Any]]:
         return self.groups.get(name)
 
-    def add_group(self, name: str) -> None:
+    def add_group(self, name: str, data) -> None:
         if name in self.groups:
             raise ValueError(f"Group {name} already exists")
-        self.groups[name] = {"hosts": [], "vars": {}}
+        self.groups[name] = {
+            "hosts": data.get("hosts", []),
+            "vars": data.get("vars", {})
+            }
 
     def update_group(
         self,

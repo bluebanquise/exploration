@@ -92,7 +92,7 @@ def main(argv=None):
 """
 
           BlueBanquise Overlord
-          
+
 """)
 
     inventory_root = global_args.inventory or config.get("inventory_path")

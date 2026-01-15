@@ -11,7 +11,7 @@ from flask import (
 )
 from flask_restful import Api, Resource
 
-from common.ui import overlord_page_render
+# from common.ui import overlord_page_render
 from common.files import load_yaml_file
 from common.logging import configure_logging
 from common.inventory import AnsibleInventory
@@ -25,45 +25,32 @@ blueprint = Blueprint(
     template_folder="templates",
 )
 
-# --------------------------
-# HTML endpoints (thin)
-# --------------------------
+####################### HTML ENDPOINT #######################
 
 @blueprint.route("/inventory/host/list")
 def host_list_page():
-    """
-    Just render the page; JS will fetch the hosts from the REST API.
-    """
-    return overlord_page_render(
-        current_app.config["UI_SKELETON"],
+    return render_template(
+        "host/list.j2",
         current_section="inventory",
-        template_name="host/list.j2",
     )
-
 
 @blueprint.route("/inventory/host/add")
 def host_add_page():
-    return overlord_page_render(
-        current_app.config["UI_SKELETON"],
+    return render_template(
+        "host/add.j2",
         current_section="inventory",
-        template_name="host/add.j2",
     )
-
 
 @blueprint.route("/inventory/host/delete")
 def host_delete_page():
-    return overlord_page_render(
-        current_app.config["UI_SKELETON"],
+    return render_template(
+        "host/delete.j2",
         current_section="inventory",
-        template_name="host/delete.j2",
     )
-
 
 @blueprint.route("/inventory/host/<string:hostname>")
 def host_details_page(hostname: str):
-    return overlord_page_render(
-        current_app.config["UI_SKELETON"],
+    return render_template(
+        "host/details.j2",
         current_section="inventory",
-        template_name="host/details.j2",
-        hostname=hostname,
     )

@@ -15,9 +15,7 @@
       <th></th>
     </tr>
   </thead>
-  <tbody id="group-table-body">
-    <!-- Filled by JS -->
-  </tbody>
+  <tbody id="group-table-body"></tbody>
 </table>
 
 <script>
@@ -28,18 +26,23 @@ async function loadGroups() {
     tbody.innerHTML = "";
 
     for (const [name, g] of Object.entries(groups)) {
-        const tr = document.createElement("tr");
+        const type = g.group_type || "";
 
+        const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${name}</td>
-            <td>${g.group_type || ""}</td>
+            <td>${type}</td>
             <td>
-                <a class="button is-small is-danger" href="/inventory/group/delete/${name}">
-                    Delete
+                <a class="button is-small is-info"
+                   href="/inventory/group/details/${type}/${name}">
+                   Details
+                </a>
+                <a class="button is-small is-danger"
+                   href="/inventory/group/delete/${name}">
+                   Delete
                 </a>
             </td>
         `;
-
         tbody.appendChild(tr);
     }
 }

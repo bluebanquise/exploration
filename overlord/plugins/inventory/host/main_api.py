@@ -11,10 +11,8 @@ from flask import (
 )
 from flask_restful import Api, Resource
 
-from common.ui import overlord_page_render
 from common.files import load_yaml_file
 from common.logging import configure_logging
-# from common.inventory import AnsibleInventory
 
 # Import plugin logic
 from plugins.inventory.host.main import Plugin as HostPlugin
@@ -24,46 +22,30 @@ blueprint = Blueprint(
     __name__,
     template_folder="templates",
 )
-
-# --------------------------
-# Helpers
-# --------------------------
+api = Api(blueprint)
 
 
-def get_logger():
+def call_plugin(action: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Instantiate HostPlugin and execute a specific action with payload.
+    """
     cfg = current_app.config.get("OVERLORD_CONFIG", {})
+
+    # Get logger
     log_level = cfg.get("log_level", "INFO")
     log_file = cfg.get("log_file")
-    return configure_logging(log_file, log_level)
+    logger = configure_logging(log_file, log_level)
 
-
-# def get_inventory(diff: bool = False, check: bool = False) -> AnsibleInventory:
-#     cfg = current_app.config.get("OVERLORD_CONFIG", {})
-#     inventory_root = cfg.get("inventory_path")
-#     working_folder = cfg.get("working_folder")
-#     logger = get_logger()
-#     return AnsibleInventory(
-#         inventory_root=inventory_root,
-#         working_folder=working_folder,
-#         diff=diff,
-#         check=check,
-#         logger=logger,
-#     )
-
-
-def get_plugin_config() -> Dict[str, Any]:
-    cfg = current_app.config.get("OVERLORD_CONFIG", {})
+    # Get plugin config
     plugins_path = cfg.get("plugins_path", "./plugins")
     config_path = f"{plugins_path}/inventory/host/config.yml"
     try:
-        return load_yaml_file(config_path) or {}
+        plugin_config = load_yaml_file(config_path) or {}
     except FileNotFoundError:
-        return {}
+        plugin_config = {}
 
-
-def build_global_context() -> Dict[str, Any]:
-    cfg = current_app.config.get("OVERLORD_CONFIG", {})
-    return {
+    # Build global context to pass to plugin
+    global_ctx = {
         "diff": False,
         "check": False,
         "debug": cfg.get("log_level", "INFO").upper() == "DEBUG",
@@ -74,32 +56,20 @@ def build_global_context() -> Dict[str, Any]:
         "config": cfg,
     }
 
-
-def call_plugin(action: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Instantiate HostPlugin and execute a specific action with payload.
-    """
-    cfg = current_app.config.get("OVERLORD_CONFIG", {})
-    logger = get_logger()
-    #inv = get_inventory(diff=False, check=False)
-    plugin_config = get_plugin_config()
-    global_ctx = build_global_context()
-
+    # Ok ready to call plugin, init it
     plugin = HostPlugin(
-        action_args=[action],  # CLI args not used here; we pass payload directly
+        action_args=[action],
         config=plugin_config,
         logger=logger,
         global_args=global_ctx,
     )
 
+    # All went well, execute with payload and action
     return plugin.execute(action, payload)
 
 
-# --------------------------
-# REST API
-# --------------------------
+################## REST API ##################
 
-api = Api(blueprint)
 
 
 class HostListResource(Resource):
@@ -125,7 +95,7 @@ class HostListResource(Resource):
                 "message": "JSON payload must be a non-empty object",
             }, 400
 
-        payload = {"hosts": data}
+        payload = data
         result = call_plugin("add", payload)
         status_code = 201 if result.get("status") == "ok" else 400
         return result, status_code
@@ -134,11 +104,7 @@ class HostListResource(Resource):
 class HostResource(Resource):
     def get(self, hostname: str):
         payload = {hostname}
-        print('coucou')
-        print(payload)
         result = call_plugin("get", payload)
-        print('result')
-        print(result)
         status_code = 200 if result.get("status") == "ok" else 404
         return result, status_code
 

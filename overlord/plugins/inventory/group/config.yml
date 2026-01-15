@@ -1,0 +1,16 @@
+name: inventory_group
+title: Group inventory
+description: Manage groups in the cluster inventory.
+version: "1.0.0"
+category: inventory
+
+api:
+  base_url: /api/v1/inventory/group
+
+ui_integration:
+  inventory:
+    group:
+      - name: List groups
+        url: /inventory/group/list
+      - name: Add new group
+        url: /inventory/group/add

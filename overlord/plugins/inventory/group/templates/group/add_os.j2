@@ -1,0 +1,195 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Create Operating System group</h1>
+
+<div class="box" style="max-width: 800px;">
+
+  <div class="field">
+    <label class="label">Group name</label>
+    <input id="group_name" class="input" type="text" value="{{ request.args.get('name') }}">
+  </div>
+
+  <hr>
+
+  <h2 class="subtitle">Operating System settings</h2>
+
+  <!-- OS Distribution -->
+  <div class="field">
+    <label class="label">Distribution</label>
+    <div class="select">
+      <select id="os_distribution" onchange="updateVersions()">
+        <option value="ubuntu">ubuntu</option>
+        <option value="debian">debian</option>
+        <option value="redhat">redhat</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- OS Distribution Version -->
+  <div class="field">
+    <label class="label">Distribution version</label>
+    <div class="select">
+      <select id="os_distribution_version" onchange="updateMajorVersion()">
+        <!-- Filled dynamically -->
+      </select>
+    </div>
+  </div>
+
+  <!-- OS Distribution Major Version (auto) -->
+  <div class="field">
+    <label class="label">Distribution major version</label>
+    <input id="os_distribution_major_version" class="input" type="text" readonly>
+  </div>
+
+  <div class="field">
+    <label class="label">Keyboard layout</label>
+    <input id="os_keyboard_layout" class="input" type="text" value="us">
+  </div>
+
+  <div class="field">
+    <label class="label">System language</label>
+    <input id="os_system_language" class="input" type="text" value="en_US.UTF-8">
+  </div>
+
+  <div class="field">
+    <label class="label">Firewall</label>
+    <div class="select">
+      <select id="os_firewall">
+        <option value="true">true</option>
+        <option value="false">false</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Access control</label>
+    <div class="select">
+      <select id="os_access_control">
+        <option value="enforcing">enforcing</option>
+        <option value="disabled">disabled</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Admin password (SHA512)</label>
+    <input id="os_admin_password_sha512" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Admin SSH keys</label>
+    <div id="ssh-keys-container"></div>
+    <button class="button is-small is-link" onclick="addSshKeyField()">Add SSH key</button>
+  </div>
+
+  <div class="field">
+    <label class="label">Partitioning</label>
+    <textarea id="os_partitioning" class="textarea" rows="6"></textarea>
+  </div>
+
+  <div class="field">
+    <label class="label">Kernel parameters</label>
+    <textarea id="os_kernel_parameters" class="textarea" rows="4"></textarea>
+  </div>
+
+  <button class="button is-primary" onclick="createGroup()">Create group</button>
+</div>
+
+<script>
+/* ------------------------------
+   Distribution → Versions mapping
+--------------------------------*/
+const distroVersions = {
+    ubuntu: ["22.04", "24.04"],
+    debian: ["12", "13"],
+    redhat: ["9", "10"]
+};
+
+/* ------------------------------
+   Update version dropdown when OS changes
+--------------------------------*/
+function updateVersions() {
+    const distro = document.getElementById("os_distribution").value;
+    const versionSelect = document.getElementById("os_distribution_version");
+
+    versionSelect.innerHTML = "";
+
+    distroVersions[distro].forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        versionSelect.appendChild(opt);
+    });
+
+    updateMajorVersion();
+}
+
+/* ------------------------------
+   Auto-set major version
+--------------------------------*/
+function updateMajorVersion() {
+    const version = document.getElementById("os_distribution_version").value;
+    const major = version.includes(".") ? version.split(".")[0] : version;
+    document.getElementById("os_distribution_major_version").value = major;
+}
+
+/* ------------------------------
+   SSH key fields
+--------------------------------*/
+function addSshKeyField(initial = "") {
+    const container = document.getElementById("ssh-keys-container");
+    const div = document.createElement("div");
+    div.className = "field";
+    div.innerHTML = `
+        <div class="control" style="display:flex; gap:0.5rem;">
+            <input class="input ssh-key-input" type="text" value="${initial}">
+            <button class="button is-small is-danger" onclick="removeSshKeyField(this)">X</button>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function removeSshKeyField(btn) {
+    btn.closest(".field").remove();
+}
+
+/* ------------------------------
+   Create group
+--------------------------------*/
+async function createGroup() {
+    const name = document.getElementById("group_name").value.trim();
+
+    const sshKeys = [];
+    document.querySelectorAll(".ssh-key-input").forEach(i => {
+        const v = i.value.trim();
+        if (v) sshKeys.push(v);
+    });
+
+    await apiRequest("POST", "/api/v1/inventory/group", {
+        name: name,
+        group_type: "os",
+        os_operating_system: {
+            distribution: document.getElementById("os_distribution").value,
+            distribution_version: document.getElementById("os_distribution_version").value,
+            distribution_major_version: document.getElementById("os_distribution_major_version").value,
+        },
+        os_keyboard_layout: document.getElementById("os_keyboard_layout").value.trim(),
+        os_system_language: document.getElementById("os_system_language").value.trim(),
+        os_firewall: document.getElementById("os_firewall").value === "true",
+        os_access_control: document.getElementById("os_access_control").value,
+        os_admin_password_sha512: document.getElementById("os_admin_password_sha512").value.trim(),
+        os_admin_ssh_keys: sshKeys,
+        os_partitioning: document.getElementById("os_partitioning").value,
+        os_kernel_parameters: document.getElementById("os_kernel_parameters").value,
+    });
+
+    window.location.href = "/inventory/group/list";
+}
+
+/* ------------------------------
+   Initialize defaults
+--------------------------------*/
+updateVersions();
+</script>
+{% endblock %}

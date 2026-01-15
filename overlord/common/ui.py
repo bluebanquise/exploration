@@ -18,15 +18,3 @@ def deep_merge_ui_skeleton(base: Dict[str, Any], addition: Dict[str, Any]) -> Di
                 base[section][title] = []
             base[section][title].extend(items)
     return base
-
-def overlord_page_render(ui_skeleton, current_section, template_name, **kwargs):
-    """
-    Render a plugin page that itself extends main.j2.
-    ui_skeleton is kept for compatibility if other code still passes it,
-    but we no longer render it directly here.
-    """
-    return render_template(
-        template_name,
-        current_section=current_section,
-        **kwargs,
-    )
