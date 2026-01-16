@@ -7,6 +7,7 @@ from flask_restful import Api, Resource
 
 from common.files import load_yaml_file
 from common.logging import configure_logging
+from typing import Any, Dict
 
 # Import plugin logic
 from plugins.inventory.group.main import Plugin as GroupPlugin
@@ -85,74 +86,104 @@ class GroupListResource(Resource):
 
         Expected JSON:
         {
-            "name": "mygroup",
-            "group_type": "os" | "hardware" | "function" | "rack" | "custom",
-            ... type-specific fields ...
+            "mygroup":
+              "group_type": "os" | "hardware" | "function" | "rack" | "custom",
+              "vars": {}
+              "hosts": []
         }
         """
-        payload = request.get_json() or {}
-        name = payload.get("name")
+        data = request.get_json(force=True, silent=True)
+        if not isinstance(data, dict) or not data:
+            return {
+                "status": "error",
+                "message": "JSON payload must be a non-empty object",
+            }, 400
 
-        if not name:
-            return api_error("Missing 'name'")
+        payload = data
 
-        try:
-            plugin = get_group_plugin()
-            plugin.add_group(name, payload)
-            plugin.save()
-            return api_ok(message=f"Group {name} created")
-        except Exception as e:
-            return api_error(str(e))
-
+        result = call_plugin("add", payload)
+        status_code = 201 if result.get("status") == "ok" else 400
+        return result, status_code
 
 # ------------------------------------------------------------
-# /api/v1/inventory/group/<name>
+# /api/v1/inventory/group/<groupname>
 # ------------------------------------------------------------
 class GroupResource(Resource):
-    def get(self, name):
-        """
-        GET /api/v1/inventory/group/<name>
-        Retrieve a single group.
-        """
-        plugin = get_group_plugin()
-        group = plugin.get_group(name)
+    def get(self, groupname):
+        payload = {groupname}
+        result = call_plugin("get", payload)
+        status_code = 200 if result.get("status") == "ok" else 404
+        return result, status_code
 
-        if group is None:
-            return api_error(f"Group {name} not found")
-
-        return api_ok(data={"group": {name: group}})
-
-    def put(self, name):
+    def put(self, groupname):
         """
-        PUT /api/v1/inventory/group/<name>
-        Update a group.
-        """
-        payload = request.get_json() or {}
+        Update group.
+        Body is a dict of fields to update, e.g.:
 
-        try:
-            plugin = get_group_plugin()
-            plugin.update_group(name, payload)
-            plugin.save()
-            return api_ok(message=f"Group {name} updated")
-        except Exception as e:
-            return api_error(str(e))
+        {
+          "hosts": [],
+          "vars": {...}
+        }
+        """
+        data = request.get_json(force=True, silent=True)
+        if not isinstance(data, dict):
+            return {
+                "status": "error",
+                "message": "JSON payload must be an object",
+            }, 400
 
-    def delete(self, name):
+        payload = {groupname: data}
+        result = call_plugin("update", payload)
+        status_code = 200 if result.get("status") == "ok" else 400
+        return result, status_code
+
+    def delete(self, groupname: str):
+        payload = {groupname}
+        result = call_plugin("delete", payload)
+        status_code = 200 if result.get("status") == "ok" else 404
+        return result, status_code
+
+
+# ------------------------------------------------------------
+# /api/v1/inventory/group/<groupname>/hosts/
+# ------------------------------------------------------------
+class GroupHostsResource(Resource):
+    def get(self, groupname):
+        payload = {groupname}
+        result = call_plugin("get_hosts", payload)
+        status_code = 200 if result.get("status") == "ok" else 404
+        return result, status_code
+
+    def post(self, groupname):
         """
-        DELETE /api/v1/inventory/group/<name>
-        Delete a group.
+        Add new host to group
+        {
+            host: c001
+        }
         """
-        try:
-            plugin = get_group_plugin()
-            plugin.delete_group(name)
-            plugin.save()
-            return api_ok(message=f"Group {name} deleted")
-        except Exception as e:
-            return api_error(str(e))
+        data = request.get_json(force=True, silent=True)
+        if not isinstance(data, dict):
+            return {
+                "status": "error",
+                "message": "JSON payload must be an object",
+            }, 400
+
+        payload = {groupname: {"hosts": [data["host"]]}}
+        result = call_plugin("add_hosts", payload)
+        status_code = 200 if result.get("status") == "ok" else 400
+        return result, status_code
+
+    def delete(self, groupname: str):
+        data = request.get_json(force=True, silent=True)
+        payload = {groupname: {"hosts": [data["host"]]}}
+        result = call_plugin("delete_hosts", payload)
+        status_code = 200 if result.get("status") == "ok" else 404
+        return result, status_code
 
 
 # ------------------------------------------------------------
 # Resource registration
 # ------------------------------------------------------------
 api.add_resource(GroupListResource, "/api/v1/inventory/group")
-api.add_resource(GroupResource, "/api/v1/inventory/group/<string:name>")
+api.add_resource(GroupResource, "/api/v1/inventory/group/<string:groupname>")
+api.add_resource(GroupHostsResource, "/api/v1/inventory/group/<string:groupname>/hosts")

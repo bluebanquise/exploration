@@ -1,7 +1,7 @@
 {% extends "main.j2" %}
 
 {% block content %}
-<h1 class="title">Edit Function group: {{ name }}</h1>
+<h1 class="title">Edit Rack group: {{ name }}</h1>
 
 <div class="box" style="max-width: 600px;">
   <div class="field">
@@ -16,7 +16,7 @@
 async function saveGroup() {
     await apiRequest("PUT", "/api/v1/inventory/group/{{ name }}", {
         [name]: {
-          group_type: "function"
+          group_type: "rack"
         }
     });
 

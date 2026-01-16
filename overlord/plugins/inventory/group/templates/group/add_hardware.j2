@@ -70,22 +70,33 @@
 async function createGroup() {
     const name = document.getElementById("group_name").value.trim();
 
+    // Enforce hw_ prefix
+    if (!name.startsWith("hw_")) {
+        showNotification("is-danger", "Hardware group names must start with 'hw_'");
+        return;
+    }
+
     await apiRequest("POST", "/api/v1/inventory/group", {
-        name: name,
-        group_type: "hardware",
-        hw_equipment_type: document.getElementById("hw_equipment_type").value.trim(),
-        hw_specs: {
-            cpu: {
-                name: document.getElementById("hw_cpu_name").value.trim(),
-                cores: document.getElementById("hw_cpu_cores").value,
-                cores_per_socket: document.getElementById("hw_cpu_cores_per_socket").value,
-                sockets: document.getElementById("hw_cpu_sockets").value,
-                threads_per_core: document.getElementById("hw_cpu_threads_per_core").value,
-            },
-            gpu: document.getElementById("hw_gpu").value,
-        },
-        hw_console: document.getElementById("hw_console").value.trim(),
-        hw_board_authentication: document.getElementById("hw_board_authentication").value,
+        [name]: {
+            group_type: "hardware",
+            vars: {
+                hardware: {
+                    hw_equipment_type: document.getElementById("hw_equipment_type").value.trim(),
+                    hw_specs: {
+                        cpu: {
+                            name: document.getElementById("hw_cpu_name").value.trim(),
+                            cores: document.getElementById("hw_cpu_cores").value,
+                            cores_per_socket: document.getElementById("hw_cpu_cores_per_socket").value,
+                            sockets: document.getElementById("hw_cpu_sockets").value,
+                            threads_per_core: document.getElementById("hw_cpu_threads_per_core").value,
+                        },
+                        gpu: document.getElementById("hw_gpu").value,
+                    },
+                    hw_console: document.getElementById("hw_console").value.trim(),
+                    hw_board_authentication: document.getElementById("hw_board_authentication").value,
+                }
+            }
+        }
     });
 
     window.location.href = "/inventory/group/list";

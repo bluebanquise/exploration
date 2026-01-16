@@ -3,6 +3,8 @@
 {% block content %}
 <h1 class="title">Add Host</h1>
 
+<div id="missing-groups-warning"></div>
+
 <div class="box" style="max-width: 700px;">
 
   <!-- Hostname -->
@@ -20,6 +22,41 @@
       <input id="alias" class="input" type="text" placeholder="compute01">
     </div>
   </div>
+
+  <hr>
+
+  <!-- Groups Section -->
+  <h2 class="subtitle">Groups</h2>
+
+    <div class="field">
+    <label class="label">Function group</label>
+    <div class="select is-fullwidth">
+        <select id="group_function"></select>
+    </div>
+    </div>
+
+    <div class="field">
+    <label class="label">OS group</label>
+    <div class="select is-fullwidth">
+        <select id="group_os"></select>
+    </div>
+    </div>
+
+    <div class="field">
+    <label class="label">Hardware group</label>
+    <div class="select is-fullwidth">
+        <select id="group_hardware"></select>
+    </div>
+    </div>
+
+    <div class="field">
+    <label class="label">Rack group (optional)</label>
+    <div class="select is-fullwidth">
+        <select id="group_rack">
+        <option value="">(none)</option>
+        </select>
+    </div>
+    </div>
 
   <hr>
 
@@ -57,7 +94,7 @@
 
   <hr>
 
-  <button class="button is-primary" onclick="addHost()">Add Host</button>
+  <button id="create-host-btn" class="button is-primary" onclick="addHost()">Add Host</button>
 </div>
 
 <script>
@@ -104,9 +141,19 @@ function deleteInterface(button) {
     box.remove();
 }
 
+async function addHostToGroup(groupName, hostName) {
+    await apiRequest("PUT", `/api/v1/inventory/group/${groupName}/hosts/`, {
+        host: hostName
+    });
+}
+
 async function addHost() {
     const hostname = document.getElementById("hostname").value.trim();
     const alias = document.getElementById("alias").value.trim();
+    const functionGroup = document.getElementById("group_function").value;
+    const osGroup = document.getElementById("group_os").value;
+    const hardwareGroup = document.getElementById("group_hardware").value;
+    const rackGroup = document.getElementById("group_rack").value; // optional
 
     if (!hostname) {
         showNotification("is-danger", "Hostname is required");
@@ -134,6 +181,7 @@ async function addHost() {
         });
     }
 
+    // 1. Add host
     await apiRequest("POST", "/api/v1/inventory/host", {
         [hostname]: {
             alias: alias,
@@ -142,7 +190,94 @@ async function addHost() {
         }
     });
 
+    // 2. Add host to each selected group
+    await addHostToGroup(functionGroup, hostname);
+    await addHostToGroup(osGroup, hostname);
+    await addHostToGroup(hardwareGroup, hostname);
+    if (rackGroup) {
+        await addHostToGroup(rackGroup, hostname);
+    }
+
     window.location.href = "/inventory/host/list";
 }
 </script>
+
+<script>
+function detectType(name) {
+    if (name.startsWith("fn_")) return "function";
+    if (name.startsWith("os_")) return "os";
+    if (name.startsWith("hw_")) return "hardware";
+    if (name.startsWith("rack_")) return "rack";
+    return "custom";
+}
+
+async function loadGroupsForHost() {
+    const data = await apiRequest("GET", "/api/v1/inventory/group");
+    const groups = data.groups || {};
+
+    const functionGroups = [];
+    const osGroups = [];
+    const hardwareGroups = [];
+    const rackGroups = [];
+
+    // Classify groups
+    for (const name of Object.keys(groups)) {
+        const type = detectType(name);
+        if (type === "function") functionGroups.push(name);
+        if (type === "os") osGroups.push(name);
+        if (type === "hardware") hardwareGroups.push(name);
+        if (type === "rack") rackGroups.push(name);
+    }
+
+    // Fill selects
+    fillSelect("group_function", functionGroups);
+    fillSelect("group_os", osGroups);
+    fillSelect("group_hardware", hardwareGroups);
+    fillSelect("group_rack", rackGroups, true);
+
+    // Show warnings if needed
+    const warnings = [];
+    if (functionGroups.length === 0) warnings.push("a function");
+    if (osGroups.length === 0) warnings.push("an OS");
+    if (hardwareGroups.length === 0) warnings.push("a hardware");
+
+    const warningBox = document.getElementById("missing-groups-warning");
+
+    if (warnings.length > 0) {
+        warningBox.innerHTML = warnings
+            .map(w => `<div class="notification is-warning">
+                To add a new host, you first need to create ${w} group.
+            </div>`)
+            .join("");
+
+        // Disable create button
+        document.getElementById("create-host-btn").disabled = true;
+    } else {
+        warningBox.innerHTML = "";
+        document.getElementById("create-host-btn").disabled = false;
+    }
+}
+
+function fillSelect(id, items, allowEmpty = false) {
+    const select = document.getElementById(id);
+    select.innerHTML = "";
+
+    if (allowEmpty) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "(none)";
+        select.appendChild(opt);
+    }
+
+    items.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+}
+
+loadGroupsForHost();
+</script>
+
 {% endblock %}

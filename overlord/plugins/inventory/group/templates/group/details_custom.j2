@@ -10,7 +10,7 @@
 <script>
 async function loadGroup() {
     const data = await apiRequest("GET", "/api/v1/inventory/group/{{ name }}");
-    const g = data.group["{{ name }}"];
+    const g = data.group["{{ name }}"]["vars"]["custom"];
 
     const container = document.getElementById("custom-box");
 
@@ -31,9 +31,14 @@ async function loadGroup() {
 
 async function saveGroup() {
     await apiRequest("PUT", "/api/v1/inventory/group/{{ name }}", {
-        name: "{{ name }}",
-        group_type: "custom",
-        custom_vars: document.getElementById("custom_vars").value,
+        [name]: {
+            group_type: "custom",
+            vars: {
+                custom: {
+                    custom_vars: document.getElementById("custom_vars").value,
+                }
+            }
+        }
     });
 
     window.location.href = "/inventory/group/list";

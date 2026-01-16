@@ -7,46 +7,88 @@
   <a class="button is-primary" href="/inventory/group/add">Add group</a>
 </div>
 
+<!-- Containers for each group type -->
+<h2 class="subtitle">Function groups</h2>
 <table class="table is-fullwidth is-striped">
   <thead>
-    <tr>
-      <th>Name</th>
-      <th>Type</th>
-      <th></th>
-    </tr>
+    <tr><th>Name</th><th></th></tr>
   </thead>
-  <tbody id="group-table-body"></tbody>
+  <tbody id="table-function"></tbody>
+</table>
+
+<h2 class="subtitle">OS groups</h2>
+<table class="table is-fullwidth is-striped">
+  <thead>
+    <tr><th>Name</th><th></th></tr>
+  </thead>
+  <tbody id="table-os"></tbody>
+</table>
+
+<h2 class="subtitle">Hardware groups</h2>
+<table class="table is-fullwidth is-striped">
+  <thead>
+    <tr><th>Name</th><th></th></tr>
+  </thead>
+  <tbody id="table-hardware"></tbody>
+</table>
+
+<h2 class="subtitle">Rack groups</h2>
+<table class="table is-fullwidth is-striped">
+  <thead>
+    <tr><th>Name</th><th></th></tr>
+  </thead>
+  <tbody id="table-rack"></tbody>
+</table>
+
+<h2 class="subtitle">Custom groups</h2>
+<table class="table is-fullwidth is-striped">
+  <thead>
+    <tr><th>Name</th><th></th></tr>
+  </thead>
+  <tbody id="table-custom"></tbody>
 </table>
 
 <script>
+function detectType(name) {
+    if (name.startsWith("os_")) return "os";
+    if (name.startsWith("hw_")) return "hardware";
+    if (name.startsWith("fn_")) return "function";
+    if (name.startsWith("rack_")) return "rack";
+    return "custom";
+}
+
+function appendRow(type, name) {
+    const tbody = document.getElementById(`table-${type}`);
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+        <td>${name}</td>
+        <td>
+            <a class="button is-small is-info"
+               href="/inventory/group/details/${type}/${name}">
+               Details
+            </a>
+            <a class="button is-small is-danger"
+               href="/inventory/group/delete/${name}">
+               Delete
+            </a>
+        </td>
+    `;
+
+    tbody.appendChild(tr);
+}
+
 async function loadGroups() {
     const data = await apiRequest("GET", "/api/v1/inventory/group");
     const groups = data.groups || {};
-    const tbody = document.getElementById("group-table-body");
-    tbody.innerHTML = "";
 
-    for (const [name, g] of Object.entries(groups)) {
-        const type = g.group_type || "";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${name}</td>
-            <td>${type}</td>
-            <td>
-                <a class="button is-small is-info"
-                   href="/inventory/group/details/${type}/${name}">
-                   Details
-                </a>
-                <a class="button is-small is-danger"
-                   href="/inventory/group/delete/${name}">
-                   Delete
-                </a>
-            </td>
-        `;
-        tbody.appendChild(tr);
+    for (const name of Object.keys(groups)) {
+        const type = detectType(name);
+        appendRow(type, name);
     }
 }
 
 loadGroups();
 </script>
+
 {% endblock %}

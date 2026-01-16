@@ -37,7 +37,7 @@ class Plugin(BasePlugin):
         ##################### CHECKS
 
         # We define supported actions, to be filtered later
-        SUPPORTED_ACTIONS = ["list", "add", "get", "update", "add_hosts", "remove_hosts", "delete"]
+        SUPPORTED_ACTIONS = ["list", "add", "get", "update", "add_hosts", "delete_hosts", "delete"]
         # Check there is action
         if not self.action_args:
             return self.api_error("No action specified. Use: " + str(SUPPORTED_ACTIONS))
@@ -57,7 +57,7 @@ class Plugin(BasePlugin):
             payload = {}
 
         args = self.action_args[1:]
-        if action in ("add", "get", "update", "add_hosts", "remove_hosts", "delete"):
+        if action in ("add", "get", "update", "add_hosts", "delete_hosts", "delete"):
             if not args:
                 raise ValueError(f"{action} requires at least GROUPNAME")
 
@@ -92,7 +92,7 @@ class Plugin(BasePlugin):
                 else:  # This is foo.stuff=bar, try to load it
                     data = self.parse_update_kv(args[1:])
                 payload = {groupname: data}
-            elif action in ["add_hosts", "remove_hosts"]:
+            elif action in ["add_hosts", "delete_hosts"]:
                 if len(args) < 2:
                     raise ValueError("Adding or removing hosts requires JSON or comma,separated,list of hosts")
                 update_hosts_payload = args[1]
@@ -153,7 +153,7 @@ class Plugin(BasePlugin):
         - update: { "mygroup": { ... } }
         - delete: { "mygroup" }
         - add_hosts: { "mygroup": { "hosts" [] } }
-        - remove_hosts { "mygroup": { "hosts" [] } }
+        - delete_hosts { "mygroup": { "hosts" [] } }
         """
         
         if action == "list":
@@ -168,9 +168,8 @@ class Plugin(BasePlugin):
             return self.action_delete(payload)
         elif action == "add_hosts":
             return self.action_add_hosts(payload)
-        elif action == "remove_hosts":
-            return self.action_remove_hosts(payload)
-
+        elif action == "delete_hosts":
+            return self.action_delete_hosts(payload)
 
     # # ------------- Utility -------------
     # def _get_groups_dict(self) -> Dict[str, Any]:
@@ -189,7 +188,10 @@ class Plugin(BasePlugin):
 
     def action_add(self, payload):
         for groupname, group_data in payload.items():
+            print("ADDING" + groupname)
+            print(group_data)
             self.inventory.add_group(groupname, group_data or {})
+
         self.inventory.save()
 
         return self.api_ok(message=f"Added {len(payload)} groups(s)")
@@ -244,7 +246,7 @@ class Plugin(BasePlugin):
 
         return self.api_ok(message=f"{len(payload)} groups(s) updated")
 
-    def action_remove_hosts(self, payload):
+    def action_delete_hosts(self, payload):
         for groupname, group_data in payload.items():
             if not groupname:
                 return self.api_error("groupname is required")

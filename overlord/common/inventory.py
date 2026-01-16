@@ -199,7 +199,9 @@ class AnsibleInventory:
     def delete_group(self, name: str) -> None:
         if name not in self.groups:
             raise ValueError(f"Group {name} does not exist")
+        print(self.groups)
         del self.groups[name]
+        print(self.groups)
 
     # -------------------------
     # Saving with diff/check
@@ -219,24 +221,25 @@ class AnsibleInventory:
             dir=self.working_folder,
         )
         try:
-            # Copy existing inventory root to tmp_dir
-            if os.path.isdir(self.inventory_root):
-                dst_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
-                shutil.copytree(self.inventory_root, dst_root, dirs_exist_ok=True)
-            else:
-                dst_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
-                os.makedirs(dst_root, exist_ok=True)
+            # # Copy existing inventory root to tmp_dir
+            # if os.path.isdir(self.inventory_root):
+            #     dst_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
+            #     shutil.copytree(self.inventory_root, dst_root, dirs_exist_ok=True)
+            # else:
+            #     dst_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
+            #     os.makedirs(dst_root, exist_ok=True)
 
-            # Write current in-memory state to dst_root
-            self._write_inventory(dst_root)
+            new_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
+            os.makedirs(new_root, exist_ok=True)
+            # Write current in-memory state to new_root
+            self._write_inventory(new_root)
 
             # Diff & overwrite
             original_root = self.inventory_root
-            new_root = dst_root
+            # new_root = dst_root
 
             if self.diff or self.check:
                 self._print_diff(original_root, new_root)
-
             if not self.check:
                 # Overwrite original with new_root content
                 if os.path.isdir(original_root):

@@ -160,6 +160,13 @@ function removeSshKeyField(btn) {
 async function createGroup() {
     const name = document.getElementById("group_name").value.trim();
 
+    // Enforce os_ prefix
+    if (!name.startsWith("os_")) {
+        showNotification("is-danger", "OS group names must start with 'os_'");
+        return;
+    }
+
+
     const sshKeys = [];
     document.querySelectorAll(".ssh-key-input").forEach(i => {
         const v = i.value.trim();
@@ -167,21 +174,26 @@ async function createGroup() {
     });
 
     await apiRequest("POST", "/api/v1/inventory/group", {
-        name: name,
-        group_type: "os",
-        os_operating_system: {
-            distribution: document.getElementById("os_distribution").value,
-            distribution_version: document.getElementById("os_distribution_version").value,
-            distribution_major_version: document.getElementById("os_distribution_major_version").value,
-        },
-        os_keyboard_layout: document.getElementById("os_keyboard_layout").value.trim(),
-        os_system_language: document.getElementById("os_system_language").value.trim(),
-        os_firewall: document.getElementById("os_firewall").value === "true",
-        os_access_control: document.getElementById("os_access_control").value,
-        os_admin_password_sha512: document.getElementById("os_admin_password_sha512").value.trim(),
-        os_admin_ssh_keys: sshKeys,
-        os_partitioning: document.getElementById("os_partitioning").value,
-        os_kernel_parameters: document.getElementById("os_kernel_parameters").value,
+        [name]: {
+          group_type: "os",
+          vars: {
+            os: {
+              os_operating_system: {
+                  distribution: document.getElementById("os_distribution").value,
+                  distribution_version: document.getElementById("os_distribution_version").value,
+                  distribution_major_version: document.getElementById("os_distribution_major_version").value,
+              },
+              os_keyboard_layout: document.getElementById("os_keyboard_layout").value.trim(),
+              os_system_language: document.getElementById("os_system_language").value.trim(),
+              os_firewall: document.getElementById("os_firewall").value === "true",
+              os_access_control: document.getElementById("os_access_control").value,
+              os_admin_password_sha512: document.getElementById("os_admin_password_sha512").value.trim(),
+              os_admin_ssh_keys: sshKeys,
+              os_partitioning: document.getElementById("os_partitioning").value,
+              os_kernel_parameters: document.getElementById("os_kernel_parameters").value
+            }
+          }
+        }
     });
 
     window.location.href = "/inventory/group/list";

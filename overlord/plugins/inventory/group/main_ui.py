@@ -49,7 +49,7 @@ def group_add_specific_page(group_type):
         "function": "group/add_function.j2",
         "os": "group/add_os.j2",
         "hardware": "group/add_hardware.j2",
-        "rack": "group/add_function.j2",
+        "rack": "group/add_rack.j2",
         "custom": "group/add_custom.j2",
     }
 
@@ -69,7 +69,7 @@ def group_details_specific_page(group_type, name):
         "function": "group/details_function.j2",
         "os": "group/details_os.j2",
         "hardware": "group/details_hardware.j2",
-        "rack": "group/details_function.j2",
+        "rack": "group/details_rack.j2",
         "custom": "group/details_custom.j2",
     }
 

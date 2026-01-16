@@ -22,10 +22,23 @@
 async function createGroup() {
     const name = document.getElementById("group_name").value.trim();
 
+    // Forbidden prefixes
+    const forbidden = ["fn_", "os_", "hw_", "rack_"];
+
+    if (forbidden.some(p => name.startsWith(p))) {
+        showNotification("is-danger", "Custom group names cannot start with fn_, os_, hw_, or rack_");
+        return;
+    }
+
     await apiRequest("POST", "/api/v1/inventory/group", {
-        name: name,
-        group_type: "custom",
-        custom_vars: document.getElementById("custom_vars").value,
+        [name]: {
+            group_type: "custom",
+            vars: {
+                custom: {
+                    custom_vars: document.getElementById("custom_vars").value,
+                }
+            }
+        }
     });
 
     window.location.href = "/inventory/group/list";
