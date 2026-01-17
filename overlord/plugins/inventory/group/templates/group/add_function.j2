@@ -1,34 +1,43 @@
 {% extends "main.j2" %}
 
-{% block content %}
-<h1 class="title">Create {{ group_type|capitalize }} group</h1>
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Group</a> / Add / Function</span>
+{% endblock %}
 
-<div class="box" style="max-width: 600px;">
-  <div class="field">
-    <label class="label">Group name</label>
-    <input id="group_name" class="input" type="text" value="{{ request.args.get('name') }}">
+{% block headertitle %}
+  <h1 class="title is-4">Create function group {{ name }}</h1>
+  <p class="subtitle is-6">Create a group to organize hosts by function.</p>
+{% endblock %}
+
+{% block content %}
+
+  <div class="box" style="max-width: 600px;">
+    <div class="field">
+      <label class="label">Group name</label>
+      <input id="group_name" class="input" type="text" value="{{ request.args.get('name') }}">
+    </div>
+
+    <button class="button is-primary" onclick="createGroup()">Create group</button>
   </div>
 
-  <button class="button is-primary" onclick="createGroup()">Create group</button>
-</div>
+  <script>
+  async function createGroup() {
+      const name = document.getElementById("group_name").value.trim();
 
-<script>
-async function createGroup() {
-    const name = document.getElementById("group_name").value.trim();
+      // Enforce fn_ prefix
+      if (!name.startsWith("fn_")) {
+          showNotification("is-danger", "Function group names must start with 'fn_'");
+          return;
+      }
 
-    // Enforce fn_ prefix
-    if (!name.startsWith("fn_")) {
-        showNotification("is-danger", "Function group names must start with 'fn_'");
-        return;
-    }
+      await apiRequest("POST", "/api/v1/inventory/group", {
+          [name]: {
+            group_type: "function"
+          }
+      });
 
-    await apiRequest("POST", "/api/v1/inventory/group", {
-        [name]: {
-          group_type: "function"
-        }
-    });
-
-    window.location.href = "/inventory/group/list";
-}
-</script>
+      window.location.href = "/inventory/group/list";
+  }
+  </script>
 {% endblock %}

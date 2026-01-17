@@ -1,5 +1,14 @@
 {% extends "main.j2" %}
 
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Host</a> / Details</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Host details</h1>
+{% endblock %}
+
 {% block content %}
 <h1 class="title">Host Details: {{ hostname }}</h1>
 

@@ -1,11 +1,23 @@
 {% extends "main.j2" %}
 
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Host</a> / Add</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Add Host</h1>
+  <p class="subtitle is-6">Add a new host in the inventory.</p>
+{% endblock %}
+
 {% block content %}
-<h1 class="title">Add Host</h1>
 
 <div id="missing-groups-warning"></div>
 
 <div class="box" style="max-width: 700px;">
+
+  <h2 class="subtitle">Host IDs</h2>
 
   <!-- Hostname -->
   <div class="field">
@@ -23,7 +35,9 @@
     </div>
   </div>
 
-  <hr>
+</div>
+
+<div class="box" style="max-width: 700px;">
 
   <!-- Groups Section -->
   <h2 class="subtitle">Groups</h2>
@@ -58,7 +72,9 @@
     </div>
     </div>
 
-  <hr>
+</div>
+
+<div class="box" style="max-width: 700px;">
 
   <!-- BMC Section -->
   <h2 class="subtitle">BMC</h2>
@@ -83,7 +99,9 @@
     <input id="bmc_ip4" class="input" type="text" placeholder="10.0.0.10">
   </div>
 
-  <hr>
+</div>
+
+<div class="box" style="max-width: 700px;">
 
   <!-- Network Interfaces -->
   <h2 class="subtitle">Network Interfaces</h2>
@@ -92,10 +110,10 @@
 
   <button class="button is-small is-link" onclick="addInterface()">Add new network interface</button>
 
-  <hr>
+</div>
+
 
   <button id="create-host-btn" class="button is-primary" onclick="addHost()">Add Host</button>
-</div>
 
 <script>
 function addInterface(initial = {}) {
@@ -247,7 +265,7 @@ async function loadGroupsForHost() {
         warningBox.innerHTML = warnings
             .map(w => `<div class="notification is-warning">
                 To add a new host, you first need to create ${w} group.
-            </div>`)
+            </div><br>`)
             .join("");
 
         // Disable create button

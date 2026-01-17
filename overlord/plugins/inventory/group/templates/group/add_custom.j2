@@ -1,7 +1,16 @@
 {% extends "main.j2" %}
 
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Group</a> / Add / Custom</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Create Custom group {{ name }}</h1>
+  <p class="subtitle is-6">Create a group to set custom variables.</p>
+{% endblock %}
+
 {% block content %}
-<h1 class="title">Create Custom group</h1>
 
 <div class="box" style="max-width: 800px;">
 

@@ -1,94 +1,103 @@
 {% extends "main.j2" %}
 
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Group</a> / List</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Groups</h1>
+  <p class="subtitle is-6">Organized list of groups in the inventory.</p>
+{% endblock %}
+
 {% block content %}
-<h1 class="title">Groups</h1>
 
-<div class="mb-4">
-  <a class="button is-primary" href="/inventory/group/add">Add group</a>
-</div>
+  <div class="mb-4">
+    <a class="button is-primary" href="/inventory/group/add">Add group</a>
+  </div>
 
-<!-- Containers for each group type -->
-<h2 class="subtitle">Function groups</h2>
-<table class="table is-fullwidth is-striped">
-  <thead>
-    <tr><th>Name</th><th></th></tr>
-  </thead>
-  <tbody id="table-function"></tbody>
-</table>
+  <!-- Containers for each group type -->
+  <h2 class="subtitle">Function groups</h2>
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr><th>Name</th><th></th></tr>
+    </thead>
+    <tbody id="table-function"></tbody>
+  </table>
 
-<h2 class="subtitle">OS groups</h2>
-<table class="table is-fullwidth is-striped">
-  <thead>
-    <tr><th>Name</th><th></th></tr>
-  </thead>
-  <tbody id="table-os"></tbody>
-</table>
+  <h2 class="subtitle">OS groups</h2>
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr><th>Name</th><th></th></tr>
+    </thead>
+    <tbody id="table-os"></tbody>
+  </table>
 
-<h2 class="subtitle">Hardware groups</h2>
-<table class="table is-fullwidth is-striped">
-  <thead>
-    <tr><th>Name</th><th></th></tr>
-  </thead>
-  <tbody id="table-hardware"></tbody>
-</table>
+  <h2 class="subtitle">Hardware groups</h2>
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr><th>Name</th><th></th></tr>
+    </thead>
+    <tbody id="table-hardware"></tbody>
+  </table>
 
-<h2 class="subtitle">Rack groups</h2>
-<table class="table is-fullwidth is-striped">
-  <thead>
-    <tr><th>Name</th><th></th></tr>
-  </thead>
-  <tbody id="table-rack"></tbody>
-</table>
+  <h2 class="subtitle">Rack groups</h2>
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr><th>Name</th><th></th></tr>
+    </thead>
+    <tbody id="table-rack"></tbody>
+  </table>
 
-<h2 class="subtitle">Custom groups</h2>
-<table class="table is-fullwidth is-striped">
-  <thead>
-    <tr><th>Name</th><th></th></tr>
-  </thead>
-  <tbody id="table-custom"></tbody>
-</table>
+  <h2 class="subtitle">Custom groups</h2>
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr><th>Name</th><th></th></tr>
+    </thead>
+    <tbody id="table-custom"></tbody>
+  </table>
 
-<script>
-function detectType(name) {
-    if (name.startsWith("os_")) return "os";
-    if (name.startsWith("hw_")) return "hardware";
-    if (name.startsWith("fn_")) return "function";
-    if (name.startsWith("rack_")) return "rack";
-    return "custom";
-}
+  <script>
+  function detectType(name) {
+      if (name.startsWith("os_")) return "os";
+      if (name.startsWith("hw_")) return "hardware";
+      if (name.startsWith("fn_")) return "function";
+      if (name.startsWith("rack_")) return "rack";
+      return "custom";
+  }
 
-function appendRow(type, name) {
-    const tbody = document.getElementById(`table-${type}`);
-    const tr = document.createElement("tr");
+  function appendRow(type, name) {
+      const tbody = document.getElementById(`table-${type}`);
+      const tr = document.createElement("tr");
 
-    tr.innerHTML = `
-        <td>${name}</td>
-        <td>
-            <a class="button is-small is-info"
-               href="/inventory/group/details/${type}/${name}">
-               Details
-            </a>
-            <a class="button is-small is-danger"
-               href="/inventory/group/delete/${name}">
-               Delete
-            </a>
-        </td>
-    `;
+      tr.innerHTML = `
+          <td>${name}</td>
+          <td>
+              <a class="button is-small is-info"
+                href="/inventory/group/details/${type}/${name}">
+                Details
+              </a>
+              <a class="button is-small is-danger"
+                href="/inventory/group/delete/${name}">
+                Delete
+              </a>
+          </td>
+      `;
 
-    tbody.appendChild(tr);
-}
+      tbody.appendChild(tr);
+  }
 
-async function loadGroups() {
-    const data = await apiRequest("GET", "/api/v1/inventory/group");
-    const groups = data.groups || {};
+  async function loadGroups() {
+      const data = await apiRequest("GET", "/api/v1/inventory/group");
+      const groups = data.groups || {};
 
-    for (const name of Object.keys(groups)) {
-        const type = detectType(name);
-        appendRow(type, name);
-    }
-}
+      for (const name of Object.keys(groups)) {
+          const type = detectType(name);
+          appendRow(type, name);
+      }
+  }
 
-loadGroups();
-</script>
+  loadGroups();
+  </script>
 
 {% endblock %}

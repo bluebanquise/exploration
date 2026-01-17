@@ -1,45 +1,54 @@
 {% extends "main.j2" %}
 
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Host</a> / List</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Hosts</h1>
+  <p class="subtitle is-6">Organized list of hosts in the inventory.</p>
+{% endblock %}
+
 {% block content %}
-<h1 class="title">Hosts</h1>
 
-<table class="table is-fullwidth is-striped">
-  <thead>
-    <tr>
-      <th>Hostname</th>
-      <th>Alias</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody id="host-table-body">
-  </tbody>
-</table>
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr>
+        <th>Hostname</th>
+        <th>Alias</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="host-table-body">
+    </tbody>
+  </table>
 
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    const data = await apiRequest("GET", "/api/v1/inventory/host");
-    const hosts = (data && data.hosts) || {};
-    const tbody = document.getElementById("host-table-body");
-    tbody.innerHTML = "";
+  <script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const data = await apiRequest("GET", "/api/v1/inventory/host");
+      const hosts = (data && data.hosts) || {};
+      const tbody = document.getElementById("host-table-body");
+      tbody.innerHTML = "";
 
-    Object.entries(hosts).forEach(([hostname, hostdata]) => {
-      const tr = document.createElement("tr");
+      Object.entries(hosts).forEach(([hostname, hostdata]) => {
+        const tr = document.createElement("tr");
 
-      tr.innerHTML = `
-        <td>${hostname}</td>
-        <td>${hostdata.alias || ""}</td>
-        <td>
-          <a class="button is-small is-info" href="/inventory/host/${hostname}">Details</a>
-          <a class="button is-small is-danger" href="/inventory/host/delete?hostname=${hostname}">Delete</a>
-        </td>
-      `;
+        tr.innerHTML = `
+          <td>${hostname}</td>
+          <td>${hostdata.alias || ""}</td>
+          <td>
+            <a class="button is-small is-info" href="/inventory/host/${hostname}">Details</a>
+            <a class="button is-small is-danger" href="/inventory/host/delete?hostname=${hostname}">Delete</a>
+          </td>
+        `;
 
-      tbody.appendChild(tr);
-    });
-  } catch (e) {
-    console.error("Failed to load hosts:", e);
-  }
-});
-</script>
+        tbody.appendChild(tr);
+      });
+    } catch (e) {
+      console.error("Failed to load hosts:", e);
+    }
+  });
+  </script>
 {% endblock %}

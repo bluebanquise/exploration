@@ -1,105 +1,114 @@
 {% extends "main.j2" %}
 
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Group</a> / Add / Hardware</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Create hardware group {{ name }}</h1>
+  <p class="subtitle is-6">Create a group to organize hosts by hardware reference.</p>
+{% endblock %}
+
 {% block content %}
-<h1 class="title">Create Hardware group</h1>
 
-<div class="box" style="max-width: 800px;">
+  <div class="box" style="max-width: 800px;">
 
-  <div class="field">
-    <label class="label">Group name</label>
-    <input id="group_name" class="input" type="text" value="{{ request.args.get('name') }}">
+    <div class="field">
+      <label class="label">Group name</label>
+      <input id="group_name" class="input" type="text" value="{{ request.args.get('name') }}">
+    </div>
+
+    <hr>
+
+    <h2 class="subtitle">Hardware settings</h2>
+
+    <div class="field">
+      <label class="label">Equipment type</label>
+      <input id="hw_equipment_type" class="input" type="text">
+    </div>
+
+    <h3 class="subtitle">CPU specs</h3>
+
+    <div class="field">
+      <label class="label">CPU name</label>
+      <input id="hw_cpu_name" class="input" type="text">
+    </div>
+
+    <div class="field">
+      <label class="label">Cores</label>
+      <input id="hw_cpu_cores" class="input" type="number">
+    </div>
+
+    <div class="field">
+      <label class="label">Cores per socket</label>
+      <input id="hw_cpu_cores_per_socket" class="input" type="number">
+    </div>
+
+    <div class="field">
+      <label class="label">Sockets</label>
+      <input id="hw_cpu_sockets" class="input" type="number">
+    </div>
+
+    <div class="field">
+      <label class="label">Threads per core</label>
+      <input id="hw_cpu_threads_per_core" class="input" type="number">
+    </div>
+
+    <div class="field">
+      <label class="label">GPU (YAML)</label>
+      <textarea id="hw_gpu" class="textarea" rows="4"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="label">Console</label>
+      <input id="hw_console" class="input" type="text">
+    </div>
+
+    <h3 class="subtitle">Board authentication</h3>
+
+    <div class="field">
+      <label class="label">Authentication entries (YAML)</label>
+      <textarea id="hw_board_authentication" class="textarea" rows="4"></textarea>
+    </div>
+
+    <button class="button is-primary" onclick="createGroup()">Create group</button>
   </div>
 
-  <hr>
+  <script>
+  async function createGroup() {
+      const name = document.getElementById("group_name").value.trim();
 
-  <h2 class="subtitle">Hardware settings</h2>
+      // Enforce hw_ prefix
+      if (!name.startsWith("hw_")) {
+          showNotification("is-danger", "Hardware group names must start with 'hw_'");
+          return;
+      }
 
-  <div class="field">
-    <label class="label">Equipment type</label>
-    <input id="hw_equipment_type" class="input" type="text">
-  </div>
+      await apiRequest("POST", "/api/v1/inventory/group", {
+          [name]: {
+              group_type: "hardware",
+              vars: {
+                  hardware: {
+                      hw_equipment_type: document.getElementById("hw_equipment_type").value.trim(),
+                      hw_specs: {
+                          cpu: {
+                              name: document.getElementById("hw_cpu_name").value.trim(),
+                              cores: document.getElementById("hw_cpu_cores").value,
+                              cores_per_socket: document.getElementById("hw_cpu_cores_per_socket").value,
+                              sockets: document.getElementById("hw_cpu_sockets").value,
+                              threads_per_core: document.getElementById("hw_cpu_threads_per_core").value,
+                          },
+                          gpu: document.getElementById("hw_gpu").value,
+                      },
+                      hw_console: document.getElementById("hw_console").value.trim(),
+                      hw_board_authentication: document.getElementById("hw_board_authentication").value,
+                  }
+              }
+          }
+      });
 
-  <h3 class="subtitle">CPU specs</h3>
-
-  <div class="field">
-    <label class="label">CPU name</label>
-    <input id="hw_cpu_name" class="input" type="text">
-  </div>
-
-  <div class="field">
-    <label class="label">Cores</label>
-    <input id="hw_cpu_cores" class="input" type="number">
-  </div>
-
-  <div class="field">
-    <label class="label">Cores per socket</label>
-    <input id="hw_cpu_cores_per_socket" class="input" type="number">
-  </div>
-
-  <div class="field">
-    <label class="label">Sockets</label>
-    <input id="hw_cpu_sockets" class="input" type="number">
-  </div>
-
-  <div class="field">
-    <label class="label">Threads per core</label>
-    <input id="hw_cpu_threads_per_core" class="input" type="number">
-  </div>
-
-  <div class="field">
-    <label class="label">GPU (YAML)</label>
-    <textarea id="hw_gpu" class="textarea" rows="4"></textarea>
-  </div>
-
-  <div class="field">
-    <label class="label">Console</label>
-    <input id="hw_console" class="input" type="text">
-  </div>
-
-  <h3 class="subtitle">Board authentication</h3>
-
-  <div class="field">
-    <label class="label">Authentication entries (YAML)</label>
-    <textarea id="hw_board_authentication" class="textarea" rows="4"></textarea>
-  </div>
-
-  <button class="button is-primary" onclick="createGroup()">Create group</button>
-</div>
-
-<script>
-async function createGroup() {
-    const name = document.getElementById("group_name").value.trim();
-
-    // Enforce hw_ prefix
-    if (!name.startsWith("hw_")) {
-        showNotification("is-danger", "Hardware group names must start with 'hw_'");
-        return;
-    }
-
-    await apiRequest("POST", "/api/v1/inventory/group", {
-        [name]: {
-            group_type: "hardware",
-            vars: {
-                hardware: {
-                    hw_equipment_type: document.getElementById("hw_equipment_type").value.trim(),
-                    hw_specs: {
-                        cpu: {
-                            name: document.getElementById("hw_cpu_name").value.trim(),
-                            cores: document.getElementById("hw_cpu_cores").value,
-                            cores_per_socket: document.getElementById("hw_cpu_cores_per_socket").value,
-                            sockets: document.getElementById("hw_cpu_sockets").value,
-                            threads_per_core: document.getElementById("hw_cpu_threads_per_core").value,
-                        },
-                        gpu: document.getElementById("hw_gpu").value,
-                    },
-                    hw_console: document.getElementById("hw_console").value.trim(),
-                    hw_board_authentication: document.getElementById("hw_board_authentication").value,
-                }
-            }
-        }
-    });
-
-    window.location.href = "/inventory/group/list";
-}
-</script>
+      window.location.href = "/inventory/group/list";
+  }
+  </script>
 {% endblock %}

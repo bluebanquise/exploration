@@ -1,19 +1,22 @@
 <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
-  <div class="navbar-brand">
-    <a class="navbar-item" href="/">
-      <strong>Overlord</strong>
-    </a>
-  </div>
-
-  <div class="navbar-menu">
-    <div class="navbar-start">
-      {% for section, content in ui_skeleton.items() %}
-        {% set is_active = (section == current_section) %}
-        <a class="navbar-item {% if is_active %}is-active{% endif %}"
-           href="{{ '/' + section }}">
-          {{ section }}
+    <div class="navbar-brand">
+        <a class="navbar-item" href="/">
+          <span style="color: var(--overlord-hover-accent); margin-right: 8px;">●</span>
+          <strong style="color: white;">BlueBanquise Overlord Manager</strong>
         </a>
-      {% endfor %}
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" onclick="this.classList.toggle('is-active'); document.getElementById('navbarMain').classList.toggle('is-active');">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
     </div>
-  </div>
+
+    <div id="navbarMain" class="navbar-menu">
+        <div class="navbar-start">
+        {% for section, content in ui_skeleton.items() %}
+          {% set is_active = (section == current_section) %}
+            <a class="navbar-item {% if is_active %}is-active{% endif %}" href="{{ '/' + section }}">{{ section }}</a>
+        {% endfor %}
+        </div>
+    </div>
 </nav>
