@@ -160,6 +160,10 @@ class AnsibleInventory:
         if name not in self.hosts:
             raise ValueError(f"Host {name} does not exist")
         del self.hosts[name]
+                # When deleting an host, we need to make sure it is also purged from groups!
+        for group in self.groups:
+            if name in self.groups[group]['hosts']:
+                self.groups[group]['hosts'].remove(name)
 
     # -------------------------
     # Group operations

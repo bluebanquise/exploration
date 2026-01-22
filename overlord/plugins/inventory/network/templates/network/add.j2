@@ -1,0 +1,73 @@
+{% extends "main.j2" %}
+
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Network</a> / Add</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Add Network</h1>
+  <p class="subtitle is-6">Add a new network in the inventory.</p>
+{% endblock %}
+
+{% block content %}
+
+<div class="box" style="max-width: 700px;">
+
+  <h2 class="subtitle">Network IDs</h2>
+
+  <!-- Networkname -->
+  <div class="field">
+    <label class="label">Network name</label>
+    <input id="net_name" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Subnet</label>
+    <input id="net_subnet" class="input" type="text" placeholder="10.10.0.0">
+  </div>
+
+  <div class="field">
+    <label class="label">Prefix</label>
+    <input id="net_prefix" class="input" type="text" placeholder="16">
+  </div>
+
+  <div class="field">
+    <label class="label">Gateway (optional)</label>
+    <input id="net_gateway" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Services IP (optional)</label>
+    <input id="net_services_ip" class="input" type="text">
+  </div>
+
+  <button class="button is-primary" onclick="createNetwork()">Create</button>
+
+</div>
+<script>
+
+async function createNetwork() {
+
+    const networkname = document.getElementById("net_name").value.trim();
+    const subnet = document.getElementById("net_subnet").value.trim();
+    const prefix = document.getElementById("net_prefix").value.trim();
+    const gateway = document.getElementById("net_gateway").value.trim() || undefined;
+    const services_ip = document.getElementById("net_services_ip").value.trim() || undefined;
+
+    const payload = {
+        [networkname]: {
+            subnet: subnet,
+            prefix: prefix,
+            gateway: gateway,
+            services_ip: services_ip
+        }
+    };
+
+    await apiRequest("POST", "/api/v1/inventory/network", payload);
+    window.location.href = "/inventory/network/list";
+}
+</script>
+
+{% endblock %}

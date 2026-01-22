@@ -1,0 +1,54 @@
+{% extends "main.j2" %}
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Network</a> / List</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Networks</h1>
+  <p class="subtitle is-6">Organized list of networks in the inventory.</p>
+{% endblock %}
+
+{% block content %}
+
+  <table class="table is-fullwidth is-striped">
+    <thead>
+      <tr>
+        <th>Network name</th>
+        <th>Subnet/Prefix</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="network-table-body">
+    </tbody>
+  </table>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      const data = await apiRequest("GET", "/api/v1/inventory/network");
+      const networks = (data && data.networks) || {};
+      const tbody = document.getElementById("network-table-body");
+      tbody.innerHTML = "";
+
+      Object.entries(networks).forEach(([networkname, networkdata]) => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${networkname}</td>
+          <td>${networkdata.subnet || ""}/${networkdata.prefix || ""}</td>
+          <td>
+            <a class="button is-small is-info" href="/inventory/network/${networkname}">Details</a>
+            <a class="button is-small is-danger" href="/inventory/network/delete/${networkname}">Delete</a>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    } catch (e) {
+      console.error("Failed to load networks:", e);
+    }
+  });
+  </script>
+{% endblock %}

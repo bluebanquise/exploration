@@ -1,0 +1,79 @@
+{% extends "main.j2" %}
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">Network</a> / Details</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Network details</h1>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Network Details: {{ networkname }}</h1>
+
+<div class="box" style="max-width: 700px;">
+
+  <div class="field">
+    <label class="label">Network name</label>
+    <input id="net_name" class="input" type="text" value="{{ name }}" disabled>
+  </div>
+
+  <div class="field">
+    <label class="label">Subnet</label>
+    <input id="net_subnet" class="input" type="text" placeholder="10.10.0.0">
+  </div>
+
+  <div class="field">
+    <label class="label">Prefix</label>
+    <input id="net_prefix" class="input" type="text" placeholder="16">
+  </div>
+
+  <div class="field">
+    <label class="label">Gateway (optional)</label>
+    <input id="net_gateway" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Services IP (optional)</label>
+    <input id="net_services_ip" class="input" type="text">
+  </div>
+
+  <button class="button is-primary" onclick="saveNetwork()">Save</button>
+  <a class="button" href="/inventory/network/list">Cancel</a>
+
+</div>
+
+<script>
+async function loadNetwork() {
+    const data = await apiRequest("GET", "/api/v1/inventory/network/{{ name }}");
+    const net = data.networks["{{ name }}"] || {};
+
+    document.getElementById("net_subnet").value = net.subnet || "";
+    document.getElementById("net_prefix").value = net.prefix || "";
+    document.getElementById("net_gateway").value = net.gateway || "";
+    document.getElementById("net_services_ip").value = net.services_ip || "";
+}
+
+async function saveNetwork() {
+
+    const subnet = document.getElementById("net_subnet").value.trim();
+    const prefix = document.getElementById("net_prefix").value.trim();
+    const gateway = document.getElementById("net_gateway").value.trim() || "";
+    const services_ip = document.getElementById("net_services_ip").value.trim() || "";
+
+    const payload = {
+        subnet: subnet,
+        prefix: prefix,
+        gateway: gateway,
+        services_ip: services_ip
+    };
+
+    await apiRequest("PUT", "/api/v1/inventory/network/{{ name }}", payload);
+    window.location.href = "/inventory/network/list";
+}
+
+loadNetwork();
+</script>
+
+{% endblock %}

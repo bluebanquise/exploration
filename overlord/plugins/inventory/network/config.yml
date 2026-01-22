@@ -1,0 +1,16 @@
+name: inventory_network
+title: Network inventory
+description: Manage networks in the cluster inventory.
+version: "1.0.0"
+category: inventory
+
+api:
+  base_url: /api/v1/inventory/network
+
+ui_integration:
+  inventory:
+    network:
+      - name: List networks
+        url: /inventory/network/list
+      - name: Add new network
+        url: /inventory/network/add
