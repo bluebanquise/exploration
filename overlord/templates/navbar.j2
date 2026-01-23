@@ -15,7 +15,14 @@
         <div class="navbar-start">
         {% for section, content in ui_skeleton.items() %}
           {% set is_active = (section == current_section) %}
-            <a class="navbar-item {% if is_active %}is-active{% endif %}" href="{{ '/' + section }}">{{ section }}</a>
+          {% if section == "inventory" %}
+            {% set icon = '<i class="fa-solid fa-boxes-stacked"></i>'%}
+          {% elif section == "production" %}
+            {% set icon = '<i class="fa-solid fa-gears"></i>'%}
+          {% else %}
+            {% set icon = ''%}
+          {% endif %}
+            <a class="navbar-item {% if is_active %}is-active{% endif %}" href="{{ '/' + section }}">{{ icon }} {{ section }}</a>
         {% endfor %}
         </div>
     </div>

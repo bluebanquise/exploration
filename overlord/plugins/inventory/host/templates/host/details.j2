@@ -79,6 +79,33 @@ async function loadDetails() {
     }
 }
 
+
+async function populateInterfaceNetworks(div, selectedNetwork = "") {
+    const data = await apiRequest("GET", "/api/v1/inventory/network");
+    const networks = data.networks || {};
+    const networkNames = Object.keys(networks);
+
+    const select = div.querySelector(".iface-network");
+    select.innerHTML = "";
+
+    if (networkNames.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "(no networks available)";
+        select.appendChild(opt);
+        return;
+    }
+
+    networkNames.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        if (name === selectedNetwork) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+
 function addInterface(initial = {}) {
     const container = document.getElementById("interfaces-container");
 
@@ -98,7 +125,9 @@ function addInterface(initial = {}) {
 
         <div class="field">
             <label class="label">Network</label>
-            <input class="input iface-network" type="text" value="${initial.network || ""}">
+            <div class="select is-fullwidth">
+                <select class="iface-network"></select>
+            </div>
         </div>
 
         <div class="field">
@@ -115,6 +144,8 @@ function addInterface(initial = {}) {
     `;
 
     container.appendChild(div);
+    populateInterfaceNetworks(div, initial.network);
+
 }
 
 function deleteInterface(button) {

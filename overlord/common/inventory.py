@@ -36,7 +36,6 @@ class AnsibleInventory:
 
         self.hosts: Dict[str, Dict[str, Any]] = {}
         self.groups: Dict[str, Dict[str, Any]] = {}
-        print("LOADING")
         self._load_inventory()
 
     def show(self):
@@ -88,7 +87,7 @@ class AnsibleInventory:
         groups_dir = os.path.join(
             self.inventory_root, "inventory", "cluster", "groups"
         )
-        self.groups = {}
+        self.groups = {'all':{'vars':{}, 'hosts': []}}
         if not os.path.isdir(groups_dir):
             return
 
@@ -203,9 +202,7 @@ class AnsibleInventory:
     def delete_group(self, name: str) -> None:
         if name not in self.groups:
             raise ValueError(f"Group {name} does not exist")
-        print(self.groups)
         del self.groups[name]
-        print(self.groups)
 
     # -------------------------
     # Saving with diff/check

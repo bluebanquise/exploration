@@ -41,16 +41,18 @@ def host_add_page():
         current_section="inventory",
     )
 
-@blueprint.route("/inventory/host/delete")
-def host_delete_page():
+@blueprint.route("/inventory/host/delete/<string:hostname>")
+def host_delete_page(hostname):
     return render_template(
         "host/delete.j2",
         current_section="inventory",
+        hostname=hostname
     )
 
 @blueprint.route("/inventory/host/<string:hostname>")
-def host_details_page(hostname: str):
+def host_details_page(hostname):
     return render_template(
         "host/details.j2",
         current_section="inventory",
+        hostname=hostname
     )

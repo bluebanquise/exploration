@@ -14,5 +14,5 @@ ui_integration:
         url: /inventory/host/list
       - name: Add new host
         url: /inventory/host/add
-      - name: Delete an host
-        url: /inventory/host/delete
+#      - name: Delete an host
+#        url: /inventory/host/delete

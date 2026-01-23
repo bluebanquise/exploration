@@ -3,7 +3,16 @@
     {% if current_section in ui_skeleton %}
       {% set section_content = ui_skeleton[current_section] %}
       {% for title, items in section_content.items() %}
-        <p class="menu-label">{{ title }}</p>
+        {% if title == "host" %}{# Temporary hack to add icons, to be improved because this way is hugly #}
+          {% set icon = '<i class="fa-solid fa-server"></i>'%}
+        {% elif title == "group" %}
+          {% set icon = '<i class="fa-solid fa-layer-group"></i>'%}
+        {% elif title == "network" %}
+          {% set icon = '<i class="fa-solid fa-network-wired"></i>'%}
+        {% else %}
+          {% set icon = ''%}
+        {% endif %}
+        <p class="menu-label">{{ icon }} {{ title }}</p>
         <ul class="menu-list">
           {% for item in items %}
             {% set url = item.url if item.url.startswith('/') else '/' + item.url %}

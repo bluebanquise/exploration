@@ -1,0 +1,13 @@
+name: production_health
+title: Cluster Health
+description: Display cluster health
+version: "1.0.0"
+category: production
+
+api:
+
+ui_integration:
+  production:
+    health:
+      - name: Cluster health view
+        url: /production/health/cluster_view

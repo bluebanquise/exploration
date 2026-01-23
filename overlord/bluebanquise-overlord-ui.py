@@ -3,7 +3,7 @@
 import os
 import sys
 
-from flask import Flask
+from flask import Flask, send_from_directory
 
 from common.inventory import AnsibleInventory
 from common.files import load_config, load_yaml_file
@@ -20,7 +20,66 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
 
     app = Flask(__name__)
     app.config["OVERLORD_CONFIG"] = config
-    app.config["UI_SKELETON"] = {}
+
+    # UI Skeleton
+    #
+    # - name: inventory
+    #   url: /inventory
+    #   title: "Inventory"
+    #   sub_elements:
+    #     - name: host
+    #       url: /inventory/host
+    #       title: "Hosts"
+    #       sub_elements:
+    #         ...
+
+
+    app.config["UI_SKELETON"] = [
+        {
+            "name": "inventory",
+            "url": "/inventory",
+            "title": '<i class="fa-solid fa-boxes-stacked"></i> Inventory',
+            sub_elements: []
+        },
+        {
+            "name": "production",
+            "url": "/production",
+            "title": '<i class="fa-solid fa-gears"></i> Production',
+            sub_elements: []
+        }
+    ]
+
+    def deep_merge_ui_skeleton(base, addition):
+        """
+        Deep-merge ui_skeleton-like dicts:
+        level 0: navbar sections (inventory, production, ...)
+        level 1: titles (host, slurm, ...)
+        level 2: list of {name, url} entries
+
+        This function mutates base and also returns it.
+        """
+        for new_section in addition:
+            section_exists = False
+            if 'name' in new_section:
+                for existing_section in base:
+                    if new_section['name'] == existing_section['name']:
+                        section_exists = True
+            if section_exists = False: # Need to create it, so we just slurp it entirely
+                base.append(new_section)
+            else: # It exists, so we need to go deeper to update it
+                for 
+
+            
+
+        for section, content in addition.items():
+            if section not in base:
+                base[section] = {}
+            for title, items in content.items():
+                if title not in base[section]:
+                    base[section][title] = []
+                base[section][title].extend(items)
+        return base
+
 
     inventory_root = config.get("inventory_path")
     working_folder = config.get("working_folder")
@@ -39,6 +98,7 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
 
     # Discover plugin UI and API blueprints
     for root, dirs, files in os.walk(plugins_path):
+
         # Load plugin config first
         plugin_config = {}
         if "config.yml" in files:
@@ -106,6 +166,7 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
 
             logger.debug("Loaded API plugin from %s", main_api_path)
 
+
     # This is a special move
     # We can inject a dict into templates rendering context, this avoids to pass it all the time
     # Super useful for us here
@@ -114,6 +175,11 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
         return {
             "ui_skeleton": app.config.get("UI_SKELETON", {}),
         }
+
+    @app.route('/webfonts/<path:filename>')
+    def cover_webfonts(filename):
+        return send_from_directory(app.root_path + '/static/webfonts/', filename)
+
 
     return app
 
@@ -124,6 +190,7 @@ if __name__ == "__main__":
     cfg = app.config["OVERLORD_CONFIG"]
     host = cfg.get("ui", {}).get("host", "127.0.0.1")
     port = int(cfg.get("ui", {}).get("port", 5000))
+    
     print("URLs map:")
     print(app.url_map)
     app.run(host=host, port=port, debug=False)

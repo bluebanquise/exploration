@@ -13,7 +13,8 @@
 
 {% block content %}
 
-<div id="missing-groups-warning"></div>
+<div id="missing-things-warning"></div>
+<div id="missing-networks-warning"></div>
 
 <div class="box" style="max-width: 700px;">
 
@@ -115,7 +116,35 @@
 
   <button id="create-host-btn" class="button is-primary" onclick="addHost()">Add Host</button>
 
+
 <script>
+
+async function populateInterfaceNetworks(div, selectedNetwork = "") {
+    const data = await apiRequest("GET", "/api/v1/inventory/network");
+    const networks = data.networks || {};
+    const networkNames = Object.keys(networks);
+
+    const select = div.querySelector(".iface-network");
+    select.innerHTML = "";
+
+    if (networkNames.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "(no networks available)";
+        select.appendChild(opt);
+        return;
+    }
+
+    networkNames.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        if (name === selectedNetwork) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+
 function addInterface(initial = {}) {
     const container = document.getElementById("interfaces-container");
 
@@ -135,7 +164,9 @@ function addInterface(initial = {}) {
 
         <div class="field">
             <label class="label">Network</label>
-            <input class="input iface-network" type="text" value="${initial.network || ""}">
+            <div class="select is-fullwidth">
+                <select class="iface-network"></select>
+            </div>
         </div>
 
         <div class="field">
@@ -152,6 +183,9 @@ function addInterface(initial = {}) {
     `;
 
     container.appendChild(div);
+
+    populateInterfaceNetworks(div, initial.network);
+
 }
 
 function deleteInterface(button) {
@@ -160,7 +194,7 @@ function deleteInterface(button) {
 }
 
 async function addHostToGroup(groupName, hostName) {
-    await apiRequest("PUT", `/api/v1/inventory/group/${groupName}/hosts/`, {
+    await apiRequest("POST", `/api/v1/inventory/group/${groupName}/hosts`, {
         host: hostName
     });
 }
@@ -233,6 +267,10 @@ async function loadGroupsForHost() {
     const data = await apiRequest("GET", "/api/v1/inventory/group");
     const groups = data.groups || {};
 
+    const networksdata = await apiRequest("GET", "/api/v1/inventory/network");
+    const networks = networksdata.networks || {};
+    const networkNames = Object.keys(networks);    
+
     const functionGroups = [];
     const osGroups = [];
     const hardwareGroups = [];
@@ -253,18 +291,19 @@ async function loadGroupsForHost() {
     fillSelect("group_hardware", hardwareGroups);
     fillSelect("group_rack", rackGroups, true);
 
-    // Show warnings if needed
+    // Show warnings if needed, both groups and networks
     const warnings = [];
-    if (functionGroups.length === 0) warnings.push("a function");
-    if (osGroups.length === 0) warnings.push("an OS");
-    if (hardwareGroups.length === 0) warnings.push("a hardware");
+    if (functionGroups.length === 0) warnings.push("a function group");
+    if (osGroups.length === 0) warnings.push("an OS group");
+    if (hardwareGroups.length === 0) warnings.push("a hardware group");
+    if (networkNames.length === 0) warnings.push("a network");
 
-    const warningBox = document.getElementById("missing-groups-warning");
+    const warningBox = document.getElementById("missing-things-warning");
 
     if (warnings.length > 0) {
         warningBox.innerHTML = warnings
             .map(w => `<div class="notification is-warning">
-                To add a new host, you first need to create ${w} group.
+                To add a new host, you first need to create ${w}.
             </div><br>`)
             .join("");
 

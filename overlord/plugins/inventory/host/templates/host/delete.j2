@@ -1,62 +1,29 @@
 {% extends "main.j2" %}
 
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/host">Host</a> / Delete</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Delete Host: {{ hostname }}</h1>
+  <p class="subtitle is-6">Confirmation.</p>
+{% endblock %}
+
 {% block content %}
-<h1 class="title">Delete a host</h1>
 
-<div class="field">
-  <label class="label">Select host to delete</label>
-  <div class="control">
-    <div class="select">
-      <select id="hostname-select">
-        <option value="">-- select a host --</option>
-      </select>
-    </div>
+  <div class="notification is-warning">
+    Are you sure you want to delete host <strong>{{ hostname }}</strong>?
   </div>
-</div>
 
-<div class="field is-grouped">
-  <div class="control">
-    <button class="button is-danger" id="delete-button">Delete host</button>
-  </div>
-  <div class="control">
-    <a class="button is-light" href="{{ url_for('inventory_host.host_list_page') }}">Back to list</a>
-  </div>
-</div>
+  <button class="button is-danger" onclick="deleteHost()">Delete</button>
+  <a class="button" href="/inventory/host/list">Cancel</a>
 
-<script>
-document.getElementById("delete-button").addEventListener("click", async () => {
-    const select = document.getElementById("hostname-select");
-    const hostname = select.value;
-
-    if (!hostname) {
-        showNotification("is-danger", "Please select an host to delete");
-        return;
-    }
-
-    try {
-      await apiRequest("DELETE", `/api/v1/inventory/host/${hostname}`);
+  <script>
+  async function deleteHost() {
+      await apiRequest("DELETE", "/api/v1/inventory/host/{{ name }}");
       window.location.href = "/inventory/host/list";
-    } catch (e) {
-      console.error("Failed to delete host:", e);
-    }
-});
+  }
+  </script>
 
-async function loadHostsForDelete() {
-    const select = document.getElementById("hostname-select");
-    select.innerHTML = '<option value="">-- select a host --</option>';
-
-    const data = await apiRequest("GET", "/api/v1/inventory/host");
-
-    const hosts = data && data.hosts ? data.hosts : {};
-    for (const hostname of Object.keys(hosts)) {
-        const opt = document.createElement("option");
-        opt.value = hostname;
-        opt.textContent = hostname;
-        select.appendChild(opt);
-    }
-}
-
-document.addEventListener("DOMContentLoaded", loadHostsForDelete);
-
-</script>
 {% endblock %}
