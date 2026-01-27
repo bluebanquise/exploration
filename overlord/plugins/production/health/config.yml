@@ -6,8 +6,20 @@ category: production
 
 api:
 
+# ui_integration:
+#   production:
+#     health:
+#       - name: Cluster health view
+#         url: /production/health/cluster_view
+
+
 ui_integration:
-  production:
-    health:
-      - name: Cluster health view
-        url: /production/health/cluster_view
+  - name: production
+    sub_elements:
+      - name: health
+        title: Cluster health
+        url: /production/health
+        sub_elements:
+          - name: cluster_health_view
+            url: /production/health/cluster_view
+            title: Cluster health view

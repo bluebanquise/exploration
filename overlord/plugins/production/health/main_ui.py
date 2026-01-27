@@ -29,3 +29,10 @@ def health_list_page():
         "health/cluster_view.j2",
         current_section="production",
     )
+
+@blueprint.route("/api/v1/production/health")
+def health_api():
+
+    health_results = load_yaml_file("resulsts.yam")
+
+    return health_results, 200

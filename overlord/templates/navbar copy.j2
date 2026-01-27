@@ -13,9 +13,9 @@
 
     <div id="navbarMain" class="navbar-menu">
         <div class="navbar-start">
-        {% for section in ui_skeleton %}
-          {% set is_active = (section['name'] == current_section) %}
-            <a class="navbar-item {% if is_active %}is-active{% endif %}" href="{{ section['url'] }}">{{ section['title'] }}</a>
+        {% for section, content in ui_skeleton.items() %}
+          {% set is_active = (section == current_section) %}
+            <a class="navbar-item {% if is_active %}is-active{% endif %}" href="{{ '/' + section }}">{{ section }}</a>
         {% endfor %}
         </div>
     </div>

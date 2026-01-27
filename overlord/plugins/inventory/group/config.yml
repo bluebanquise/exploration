@@ -7,10 +7,24 @@ category: inventory
 api:
   base_url: /api/v1/inventory/group
 
+# ui_integration:
+#   inventory:
+#     group:
+#       - name: List groups
+#         url: /inventory/group/list
+#       - name: Add new group
+#         url: /inventory/group/add
+
 ui_integration:
-  inventory:
-    group:
-      - name: List groups
-        url: /inventory/group/list
-      - name: Add new group
-        url: /inventory/group/add
+  - name: inventory
+    sub_elements:
+      - name: group
+        title: Groups
+        url: /inventory/group
+        sub_elements:
+        - name: list_groups
+          title: List groups
+          url: /inventory/group/list
+        - name: add_group
+          title: Add new group
+          url: /inventory/group/add

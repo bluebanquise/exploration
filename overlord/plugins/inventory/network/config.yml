@@ -7,10 +7,24 @@ category: inventory
 api:
   base_url: /api/v1/inventory/network
 
+# ui_integration:
+#   inventory:
+#     network:
+#       - name: List networks
+#         url: /inventory/network/list
+#       - name: Add new network
+#         url: /inventory/network/add
+
 ui_integration:
-  inventory:
-    network:
-      - name: List networks
-        url: /inventory/network/list
-      - name: Add new network
-        url: /inventory/network/add
+  - name: inventory
+    sub_elements:
+      - name: network
+        title: Networks
+        url: /inventory/network
+        sub_elements:
+        - name: list_networks
+          title: List networks
+          url: /inventory/network/list
+        - name: add_network
+          title: Add new network
+          url: /inventory/network/add

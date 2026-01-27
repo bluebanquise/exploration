@@ -1,27 +1,32 @@
 <aside class="sidebar-menu" style="width: 260px;">
     <div class="menu">
-    {% if current_section in ui_skeleton %}
-      {% set section_content = ui_skeleton[current_section] %}
-      {% for title, items in section_content.items() %}
-        {% if title == "host" %}{# Temporary hack to add icons, to be improved because this way is hugly #}
-          {% set icon = '<i class="fa-solid fa-server"></i>'%}
-        {% elif title == "group" %}
-          {% set icon = '<i class="fa-solid fa-layer-group"></i>'%}
-        {% elif title == "network" %}
-          {% set icon = '<i class="fa-solid fa-network-wired"></i>'%}
-        {% else %}
-          {% set icon = ''%}
+
+    {% set ns = namespace(section=None) %}
+
+    {# Find the current section object #}
+    {% for item in ui_skeleton %}
+        {% if item.name == current_section %}
+            {% set ns.section = item %}
         {% endif %}
-        <p class="menu-label">{{ icon }} {{ title }}</p>
-        <ul class="menu-list">
-          {% for item in items %}
-            {% set url = item.url if item.url.startswith('/') else '/' + item.url %}
-            <li><a href="{{ url }}">{{ item.name }}</a></li>
-          {% endfor %}
-        </ul>
-      {% endfor %}
+    {% endfor %}
+
+    {% if ns.section %}
+        {% for sub in ns.section.sub_elements %}
+            <p class="menu-label">{{ sub.title }}</p>
+
+            <ul class="menu-list">
+                {% for entry in sub.sub_elements %}
+                    <li>
+                        <a href="{{ entry.url }}">
+                            {{ entry.title }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
     {% else %}
-      <p>No menu entries for this section.</p>
+        <p>No menu entries for this section.</p>
     {% endif %}
+
     </div>
 </aside>

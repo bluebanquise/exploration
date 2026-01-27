@@ -39,46 +39,110 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
             "name": "inventory",
             "url": "/inventory",
             "title": '<i class="fa-solid fa-boxes-stacked"></i> Inventory',
-            sub_elements: []
+            "sub_elements": []
         },
         {
             "name": "production",
             "url": "/production",
             "title": '<i class="fa-solid fa-gears"></i> Production',
-            sub_elements: []
+            "sub_elements": []
         }
     ]
 
-    def deep_merge_ui_skeleton(base, addition):
-        """
-        Deep-merge ui_skeleton-like dicts:
-        level 0: navbar sections (inventory, production, ...)
-        level 1: titles (host, slurm, ...)
-        level 2: list of {name, url} entries
 
-        This function mutates base and also returns it.
+    def deep_merge_ui_skeleton(base_list: list, other_list: list) -> list:
         """
-        for new_section in addition:
-            section_exists = False
-            if 'name' in new_section:
-                for existing_section in base:
-                    if new_section['name'] == existing_section['name']:
-                        section_exists = True
-            if section_exists = False: # Need to create it, so we just slurp it entirely
-                base.append(new_section)
-            else: # It exists, so we need to go deeper to update it
-                for 
+        Recursively merge two lists of menu elements.
+        Elements are matched by 'name'.
+        Ordering from base_list is preserved.
+        New elements from other_list are appended.
+        """
+
+        # Index base elements by name for quick lookup
+        base_index = {item["name"]: item for item in base_list if isinstance(item, dict)}
+
+        for other_item in other_list:
+            # Skip malformed entries
+            if not isinstance(other_item, dict):
+                continue
+
+            name = other_item.get("name")
+            if name is None:
+                continue
+
+            if name not in base_index:
+                # New element → append at the end
+                base_list.append(other_item)
+                base_index[name] = other_item
+                continue
+
+            # Merge into existing element
+            base_item = base_index[name]
+
+            for key, value in other_item.items():
+                if key == "sub_elements":
+                    base_item.setdefault("sub_elements", [])
+                    base_item["sub_elements"] = deep_merge_ui_skeleton(
+                        base_item["sub_elements"],
+                        value
+                    )
+                else:
+                    # Overwrite scalar fields
+                    base_item[key] = value
+
+        return base_list
+
+
+
+    # def deep_merge_ui_skeleton(base: dict, other: dict) -> dict:
+    #     """
+    #     Merge two dicts of the format:
+    #     { "data": [ { name, url, title, sub_elements: [...] }, ... ] }
+    #     """
+    #     # base.setdefault("data", [])
+    #     # other.setdefault("data", [])
+
+    #     base["data"] = merge_elements(base["data"], other["data"])
+    #     return base
+
+
+    # def deep_merge_ui_skeleton(base, addition):
+    #     """
+    #     Deep-merge ui_skeleton-like dicts:
+    #     level 0: navbar sections (inventory, production, ...)
+    #     level 1: titles (host, slurm, ...)
+    #     level 2: list of {name, url} entries
+
+    #     This function mutates base and also returns it.
+    #     """
+    #     for new_section in addition:
+    #         section_exists = False
+    #         if 'name' in new_section:
+    #             for existing_section in base:
+    #                 if new_section['name'] == existing_section['name']:
+    #                     section_exists = True
+    #         if section_exists = False: # Need to create it, so we just slurp it entirely
+    #             base.append(new_section)
+    #         else: # It exists, so we need to go deeper to update it
+    #             for new_title in new_section.get('sub_elements', []):
+    #                 title_exists = False
+    #                 if 'name' in new_title:
+    #                     for existing_title in base[new_section['name']]['sub_elements']:
+    #                         if new_section['name'] == existing_section['name']:
+    #                             section_exists = True
+
+
 
             
 
-        for section, content in addition.items():
-            if section not in base:
-                base[section] = {}
-            for title, items in content.items():
-                if title not in base[section]:
-                    base[section][title] = []
-                base[section][title].extend(items)
-        return base
+    #     for section, content in addition.items():
+    #         if section not in base:
+    #             base[section] = {}
+    #         for title, items in content.items():
+    #             if title not in base[section]:
+    #                 base[section][title] = []
+    #             base[section][title].extend(items)
+    #     return base
 
 
     inventory_root = config.get("inventory_path")
@@ -179,7 +243,6 @@ def create_app(config_path: str = "bluebanquise-overlord.yml") -> Flask:
     @app.route('/webfonts/<path:filename>')
     def cover_webfonts(filename):
         return send_from_directory(app.root_path + '/static/webfonts/', filename)
-
 
     return app
 

@@ -7,12 +7,26 @@ category: inventory
 api:
   base_url: /api/v1/inventory/host
 
-ui_integration:
-  inventory:
-    host:
-      - name: List hosts
-        url: /inventory/host/list
-      - name: Add new host
-        url: /inventory/host/add
+# ui_integration:
+#   inventory:
+#     host:
+#       - name: List hosts
+#         url: /inventory/host/list
+#       - name: Add new host
+#         url: /inventory/host/add
 #      - name: Delete an host
 #        url: /inventory/host/delete
+
+ui_integration:
+  - name: inventory
+    sub_elements:
+      - name: host
+        title: Hosts
+        url: /inventory/host
+        sub_elements:
+        - name: list_hosts
+          title: List hosts
+          url: /inventory/host/list
+        - name: add_host
+          title: Add new host
+          url: /inventory/host/add
