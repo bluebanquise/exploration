@@ -1,13 +1,14 @@
 unracked:
   c003:
     errors: false
+    inmaintenance: true
     healthchecks:
     - name: Check scratch is mounted
       stdout: 'foobar'
       stderr: ''
-      error: false 
+      error: false
 rack_1:
-  34.29.184.37:
+  c001:
     errors: false
     healthchecks:
     - name: Check scratch is mounted

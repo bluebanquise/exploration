@@ -25,14 +25,25 @@ blueprint = Blueprint(
 
 @blueprint.route("/production/health/cluster_view")
 def health_list_page():
+
+    results = load_yaml_file("results.yaml")
+
     return render_template(
         "health/cluster_view.j2",
         current_section="production",
+        results=results
     )
 
 @blueprint.route("/api/v1/production/health")
 def health_api():
 
-    health_results = load_yaml_file("resulsts.yam")
+    results = load_yaml_file("results.yaml")
+    print(results)
 
-    return health_results, 200
+    toto = render_template(
+        "health/cluster_view.j2",
+        current_section="production",
+        results=results
+    )
+    print(toto)
+    return "OK"

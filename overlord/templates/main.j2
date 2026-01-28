@@ -240,9 +240,12 @@
                 border-bottom: 1px solid var(--overlord-border);
             }
         }
+
     </style>
 
-
+    {% block customstyle %}
+    {# plugin pages will override this block #}
+    {% endblock %}
 
 </head>
 <body>
@@ -269,11 +272,11 @@
             {# plugin pages will override this block #}
             {% endblock %}
             </div>
-            <div class="buttons are-small">
+            {# <div class="buttons are-small">
                 <button class="button is-dark" style="background: transparent; border: 1px solid #555; color: #ccc;">
                     Sort by: Name
                 </button>
-            </div>
+            </div> #}
         </div>
 
       <!-- Content Header -->

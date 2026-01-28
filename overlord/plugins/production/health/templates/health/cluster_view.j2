@@ -1,0 +1,243 @@
+{% extends "main.j2" %}
+
+
+{% block customstyle %}
+    <style>
+        .host-small {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .host-ok {
+            background-color: #22ff02;
+        }
+        .host-error {
+            background-color: #ff004c;
+        }
+        .host-maint {
+            background-color: #004dff;
+        }
+
+        body.dark-mode .host-ok {
+            background-color: #2e7d32;
+        }
+        body.dark-mode .host-error {
+            background-color: #ff004c;
+        }
+        body.dark-mode .host-maint {
+            background-color: #1565c0;
+        }
+
+        .rack-box {
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .rack-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 16px); /* 10 tiles per row */
+            grid-auto-rows: 16px;
+            gap: 4px;
+            justify-content: center;
+        }
+
+
+        .rack-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* Legend */
+        .legend-box {
+            margin-bottom: 20px;
+        }
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+        .legend-ok { background-color: #22ff02; }
+        .legend-error { background-color: #ff004c; }
+        .legend-maint { background-color: #004dff; }
+
+        body.dark-mode .legend-ok { background-color: #1e3a1e; }
+        body.dark-mode .legend-error { background-color: #3a1e1e; }
+        body.dark-mode .legend-maint { background-color: #1e263a; }
+</style>
+{% endblock %}
+
+{% block controlbar %}
+<div class="is-flex is-align-items-center" style="gap: 100px;">
+    <button id="toggle-view-btn" class="button is-small is-info" onclick="toggleView()">Toggle Table View</button>
+    <input id="host-search" class="input is-small" type="text" placeholder="Search host…" oninput="filterHosts()">
+<div class="is-flex is-align-items-center" style="gap: 6px; white-space: nowrap;">
+    <input id="error-filter" type="checkbox" onclick="filterHosts()">
+    <span>Show only errors</span>
+</div>
+
+
+</div>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Cluster view</h1>
+  <p class="subtitle is-6">Display cluster live view based on multiple backends.</p>
+{% endblock %}
+
+{% block content %}
+
+
+        <!-- LEGEND -->
+        <div class="legend-box">
+            <span class="legend-item">
+                <span class="legend-color legend-ok"></span> Healthy
+            </span>
+            <span class="legend-item">
+                <span class="legend-color legend-error"></span> Error
+            </span>
+            <span class="legend-item">
+                <span class="legend-color legend-maint"></span> In Maintenance
+            </span>
+        </div>
+
+        <!-- TILE VIEW -->
+        <div id="tile-view">
+            <div class="columns is-multiline">
+                {% for rack, hosts in results.items() %}
+                <div class="column is-one-quarter">
+                    <div class="rack-box">
+                        <div class="rack-title">{{ rack }}</div>
+
+                            <div class="rack-grid">
+                                {% for host, data in hosts.items() %}
+                                {% set maint = data.get('inmaintenance', False) %}
+                                {% set err = data.get('errors', False) %}
+
+                                {% if maint %}
+                                    {% set css = 'host-maint' %}
+                                {% elif err %}
+                                    {% set css = 'host-error' %}
+                                {% else %}
+                                    {% set css = 'host-ok' %}
+                                {% endif %}
+
+                                <div class="host-small {{ css }}"
+                                    title="{{ host }}"
+                                    data-host="{{ host }}"
+                                    data-error="{{ 'true' if err else 'false' }}"
+                                    data-maint="{{ 'true' if maint else 'false' }}"
+                                    onclick="window.location='/host/{{ host }}'">
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- TABLE VIEW -->
+        <table id="table-view" class="table is-striped is-hoverable is-fullwidth" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Rack</th>
+                    <th>Host</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rack, hosts in results.items() %}
+                    {% for host, data in hosts.items() %}
+                    {% set maint = data.get('inmaintenance', False) %}
+                    {% set err = data.get('errors', False) %}
+
+                    <tr class="host-row"
+                        data-host="{{ host }}"
+                        data-error="{{ 'true' if err else 'false' }}"
+                        data-maint="{{ 'true' if maint else 'false' }}"
+                        onclick="window.location='/host/{{ host }}'">
+
+                        <td>{{ rack }}</td>
+                        <td>{{ host }}</td>
+                        <td>
+                            {% if maint %}
+                                <span class="tag is-info">MAINTENANCE</span>
+                            {% elif err %}
+                                <span class="tag is-danger">ERROR</span>
+                            {% else %}
+                                <span class="tag is-success">OK</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+<script>
+function filterHosts() {
+    const query = document.getElementById("host-search").value.toLowerCase();
+    const onlyErrors = document.getElementById("error-filter").checked;
+
+    const tiles = document.querySelectorAll(".host-tile");
+    const rows = document.querySelectorAll(".host-row");
+
+    tiles.forEach(tile => {
+        const name = tile.getAttribute("data-host").toLowerCase();
+        const isError = tile.getAttribute("data-error") === "true";
+
+        let visible = name.includes(query);
+        if (onlyErrors && !isError) visible = false;
+
+        tile.style.display = visible ? "" : "none";
+    });
+
+    rows.forEach(row => {
+        const name = row.getAttribute("data-host").toLowerCase();
+        const isError = row.getAttribute("data-error") === "true";
+
+        let visible = name.includes(query);
+        if (onlyErrors && !isError) visible = false;
+
+        row.style.display = visible ? "" : "none";
+    });
+}
+
+function toggleView() {
+    const tile = document.getElementById("tile-view");
+    const table = document.getElementById("table-view");
+    const btn = document.getElementById("toggle-view-btn");
+
+    const showingTable = tile.style.display === "none";
+
+    if (showingTable) {
+        // Switch to rack view
+        tile.style.display = "";
+        table.style.display = "none";
+        btn.textContent = "Toggle Table View";
+    } else {
+        // Switch to table view
+        tile.style.display = "none";
+        table.style.display = "";
+        btn.textContent = "Toggle Racks View";
+    }
+
+    filterHosts();
+}
+
+</script>
+
+{% endblock %}

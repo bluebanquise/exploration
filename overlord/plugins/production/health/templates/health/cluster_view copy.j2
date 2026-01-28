@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Healthcheck Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        body.dark-mode .box {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        body.dark-mode .navbar {
+            background-color: #1e1e1e !important;
+        }
+
+        /* Host color states */
+    
+        .host-small {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+
+        .host-ok {
+            background-color: #4caf50;
+        }
+        .host-error {
+            background-color: #e53935;
+        }
+        .host-maint {
+            background-color: #1e88e5;
+        }
+
+        body.dark-mode .host-ok {
+            background-color: #2e7d32;
+        }
+        body.dark-mode .host-error {
+            background-color: #b71c1c;
+        }
+        body.dark-mode .host-maint {
+            background-color: #1565c0;
+        }
+
+        .rack-box {
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .rack-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 16px); /* 10 tiles per row */
+            grid-auto-rows: 16px;
+            gap: 4px;
+            justify-content: center;
+        }
+
+
+        .rack-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* Legend */
+        .legend-box {
+            margin-bottom: 20px;
+        }
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+        .legend-ok { background-color: #d4f8d4; }
+        .legend-error { background-color: #f8d4d4; }
+        .legend-maint { background-color: #d4e0f8; }
+
+        body.dark-mode .legend-ok { background-color: #1e3a1e; }
+        body.dark-mode .legend-error { background-color: #3a1e1e; }
+        body.dark-mode .legend-maint { background-color: #1e263a; }
+    </style>
+    <meta http-equiv="refresh" content="5">
+</head>
+
+<body class="has-background-light">
+
+<!-- NAVBAR -->
+<nav class="navbar is-light" role="navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="/">
+      <strong>Health Dashboard</strong>
+    </a>
+  </div>
+
+  <div class="navbar-end">
+
+    <div class="navbar-item">
+        <input id="host-search" class="input is-small" type="text" placeholder="Search host…" oninput="filterHosts()">
+    </div>
+
+    <div class="navbar-item">
+        <label class="checkbox">
+            <input id="error-filter" type="checkbox" onclick="filterHosts()">
+            Show only errors
+        </label>
+    </div>
+
+    <div class="navbar-item">
+        <button class="button is-small is-info" onclick="toggleView()">Toggle Table View</button>
+    </div>
+
+    <div class="navbar-item">
+        <span id="theme-icon" style="cursor:pointer; font-size:20px;" onclick="toggleDarkMode()">🌙</span>
+    </div>
+
+  </div>
+</nav>
+
+<section class="section">
+    <div class="container">
+
+        <h1 class="title">Cluster View (by Rack)</h1>
+
+        <!-- LEGEND -->
+        <div class="legend-box">
+            <span class="legend-item">
+                <span class="legend-color legend-ok"></span> Healthy
+            </span>
+            <span class="legend-item">
+                <span class="legend-color legend-error"></span> Error
+            </span>
+            <span class="legend-item">
+                <span class="legend-color legend-maint"></span> In Maintenance
+            </span>
+        </div>
+
+        <!-- TILE VIEW -->
+        <div id="tile-view">
+            <div class="columns is-multiline">
+                {% for rack, hosts in results.items() %}
+                <div class="column is-one-quarter">
+                    <div class="rack-box">
+                        <div class="rack-title">{{ rack }}</div>
+
+                            <div class="rack-grid">
+                                {% for host, data in hosts.items() %}
+                                {% set maint = data.get('inmaintenance', False) %}
+                                {% set err = data.get('errors', False) %}
+
+                                {% if maint %}
+                                    {% set css = 'host-maint' %}
+                                {% elif err %}
+                                    {% set css = 'host-error' %}
+                                {% else %}
+                                    {% set css = 'host-ok' %}
+                                {% endif %}
+
+                                <div class="host-small {{ css }}"
+                                    title="{{ host }}"
+                                    data-host="{{ host }}"
+                                    data-error="{{ 'true' if err else 'false' }}"
+                                    data-maint="{{ 'true' if maint else 'false' }}"
+                                    onclick="window.location='/host/{{ host }}'">
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- TABLE VIEW -->
+        <table id="table-view" class="table is-striped is-hoverable is-fullwidth" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Rack</th>
+                    <th>Host</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rack, hosts in results.items() %}
+                    {% for host, data in hosts.items() %}
+                    {% set maint = data.get('inmaintenance', False) %}
+                    {% set err = data.get('errors', False) %}
+
+                    <tr class="host-row"
+                        data-host="{{ host }}"
+                        data-error="{{ 'true' if err else 'false' }}"
+                        data-maint="{{ 'true' if maint else 'false' }}"
+                        onclick="window.location='/host/{{ host }}'">
+
+                        <td>{{ rack }}</td>
+                        <td>{{ host }}</td>
+                        <td>
+                            {% if maint %}
+                                <span class="tag is-info">MAINTENANCE</span>
+                            {% elif err %}
+                                <span class="tag is-danger">ERROR</span>
+                            {% else %}
+                                <span class="tag is-success">OK</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+</section>
+
+<script>
+function filterHosts() {
+    const query = document.getElementById("host-search").value.toLowerCase();
+    const onlyErrors = document.getElementById("error-filter").checked;
+
+    const tiles = document.querySelectorAll(".host-tile");
+    const rows = document.querySelectorAll(".host-row");
+
+    tiles.forEach(tile => {
+        const name = tile.getAttribute("data-host").toLowerCase();
+        const isError = tile.getAttribute("data-error") === "true";
+
+        let visible = name.includes(query);
+        if (onlyErrors && !isError) visible = false;
+
+        tile.style.display = visible ? "" : "none";
+    });
+
+    rows.forEach(row => {
+        const name = row.getAttribute("data-host").toLowerCase();
+        const isError = row.getAttribute("data-error") === "true";
+
+        let visible = name.includes(query);
+        if (onlyErrors && !isError) visible = false;
+
+        row.style.display = visible ? "" : "none";
+    });
+}
+
+function toggleView() {
+    const tile = document.getElementById("tile-view");
+    const table = document.getElementById("table-view");
+
+    if (tile.style.display === "none") {
+        tile.style.display = "";
+        table.style.display = "none";
+    } else {
+        tile.style.display = "none";
+        table.style.display = "";
+    }
+
+    filterHosts();
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
+    const icon = document.getElementById("theme-icon");
+    icon.textContent = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+    localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+}
+
+window.onload = function() {
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+        document.getElementById("theme-icon").textContent = "☀️";
+    }
+    filterHosts();
+};
+</script>
+
+</body>
+</html>
