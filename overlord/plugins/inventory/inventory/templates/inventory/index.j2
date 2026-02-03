@@ -1,0 +1,20 @@
+{% extends "main.j2" %}
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a></span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Inventory</h1>
+  <p class="subtitle is-6">Main inventory page.</p>
+{% endblock %}
+
+{% block content %}
+
+Inventory path: {{ inventory['inventory_root'] }}
+
+Number of hosts in the inventory: {{ inventory['hosts'] | length }}
+
+
+{% endblock %}

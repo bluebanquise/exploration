@@ -138,7 +138,7 @@
                                     data-host="{{ host }}"
                                     data-error="{{ 'true' if err else 'false' }}"
                                     data-maint="{{ 'true' if maint else 'false' }}"
-                                    onclick="window.location='/host/{{ host }}'">
+                                    onclick="window.location='/production/health/cluster_view/{{ host }}'">
                                 </div>
                                 {% endfor %}
                             </div>
@@ -168,7 +168,7 @@
                         data-host="{{ host }}"
                         data-error="{{ 'true' if err else 'false' }}"
                         data-maint="{{ 'true' if maint else 'false' }}"
-                        onclick="window.location='/host/{{ host }}'">
+                        onclick="window.location='/production/health/cluster_view/{{ host }}'">
 
                         <td>{{ rack }}</td>
                         <td>{{ host }}</td>

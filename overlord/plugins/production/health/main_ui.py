@@ -24,7 +24,7 @@ blueprint = Blueprint(
 ####################### HTML ENDPOINT #######################
 
 @blueprint.route("/production/health/cluster_view")
-def health_list_page():
+def health_cluster_view():
 
     results = load_yaml_file("results.yaml")
 
@@ -34,16 +34,22 @@ def health_list_page():
         results=results
     )
 
-@blueprint.route("/api/v1/production/health")
-def health_api():
+@blueprint.route("/production/health/cluster_view/<string:hostname>")
+def health_hostpage(hostname):
 
     results = load_yaml_file("results.yaml")
-    print(results)
+    host_result = {}
+    for rack in results:
+        for host in results[rack]:
+            if hostname == host:
+                host_result = results[rack][host]
+                break
+        if len(host_result) > 0:
+            break
 
-    toto = render_template(
-        "health/cluster_view.j2",
+    return render_template(
+        "health/host_view.j2",
         current_section="production",
-        results=results
+        data=host_result,
+        host=hostname
     )
-    print(toto)
-    return "OK"

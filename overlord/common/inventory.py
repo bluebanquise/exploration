@@ -123,6 +123,13 @@ class AnsibleInventory:
             }
 
     # -------------------------
+    # Inventory root operations
+    # -------------------------
+
+    def get_inventory(self):
+        return {'hosts': self.hosts, 'groups': self.groups}
+
+    # -------------------------
     # Host operations
     # -------------------------
 

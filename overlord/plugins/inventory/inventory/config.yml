@@ -1,0 +1,10 @@
+name: inventory_inventory
+title: Root inventory
+description: Display inventory summary
+version: "1.0.0"
+category: inventory
+
+ui_integration:
+  - name: inventory
+    url: /inventory
+    title: '<i class="fa-solid fa-boxes-stacked"></i> Inventory'

@@ -1,0 +1,49 @@
+{% extends "main.j2" %}
+
+
+{% block customstyle %}
+
+{% endblock %}
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/production">Production</a> / <a href="/production/health">Health</a> / Host</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Host {{ host }} detailed view</h1>
+  <p class="subtitle is-6">Display host live view based on multiple backends.</p>
+{% endblock %}
+
+{% block content %}
+
+        <strong>Host global status:</strong>
+        {% if data.errors %}
+            <span class="tag is-danger is-medium">ERROR</span>
+        {% else %}
+            <span class="tag is-success is-medium">OK</span>
+        {% endif %}
+
+        <div style="margin-top: 30px;">
+            {% for hc in data.healthchecks %}
+            <div class="box {% if hc.error %}has-background-danger{% else %}has-background-success{% endif %}">
+                <h2 class="title is-5">{{ hc.name }}</h2>
+
+                <p><strong>Status:</strong>
+                    {% if hc.error %}
+                        <span class="tag is-danger is-light">ERROR</span>
+                    {% else %}
+                        <span class="tag is-success is-light">OK</span>
+                    {% endif %}
+                </p>
+
+                <p><strong>stdout:</strong></p>
+                <pre class="has-background-white-ter" style="padding: 10px; color: #303030">{{ hc.stdout }}</pre>
+
+                <p><strong>stderr:</strong></p>
+                <pre class="has-background-white-ter" style="padding: 10px; color: #303030">{{ hc.stderr }}</pre>
+            </div>
+            {% endfor %}
+        </div>
+
+{% endblock %}
