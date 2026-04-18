@@ -1,0 +1,29 @@
+{% extends "main.j2" %}
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/network">Network</a> / Delete</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Delete Network: {{ name }}</h1>
+  <p class="subtitle is-6">Confirmation.</p>
+{% endblock %}
+
+{% block content %}
+
+  <div class="notification is-warning">
+    Are you sure you want to delete network <strong>{{ name }}</strong>?
+  </div>
+
+  <button class="button is-danger" onclick="deleteNetwork()">Delete</button>
+  <a class="button" href="/inventory/network/list">Cancel</a>
+
+  <script>
+  async function deleteNetwork() {
+      await apiRequest("DELETE", "/api/v1/inventory/network/{{ name }}");
+      window.location.href = "/inventory/network/list";
+  }
+  </script>
+
+{% endblock %}

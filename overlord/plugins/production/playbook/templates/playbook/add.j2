@@ -1,0 +1,136 @@
+{% extends "main.j2" %}
+
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/production">Production</a> / <a href="/production/playbook">Playbook</a> / Add</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Add Playbook</h1>
+  <p class="subtitle is-6">Add a new playbook to deploy configuration.</p>
+{% endblock %}
+
+{% block content %}
+
+<div class="box" style="max-width: 700px;">
+
+  <h2 class="subtitle">Playbook parameters</h2>
+
+  <!-- Networkname -->
+  <div class="field">
+    <label class="label">Playbook name. Must be [a-z][0-9] and '_' caracters only.</label>
+    <input id="playbook_name" class="input" type="text">
+  </div>
+
+  <div class="field">
+  <label class="label">Target group</label>
+  <div class="select is-fullwidth">
+      <select id="playbook_group"></select>
+  </div>
+  </div>
+
+  <div class="field">
+  <label for="items">Select multiple items:</label>
+    <div class="select is-fullwidth is-multiple">
+    <select id="items" name="items" multiple size="5">
+      <option value="item1">Item 1</option>
+      <option value="item2">Item 2</option>
+      <option value="item3">Item 3</option>
+      <option value="item4">Item 4</option>
+      <option value="item5">Item 5</option>
+   </select>
+    </div>
+  </div>
+
+
+  <div class="field">
+    <label class="label">Gateway (optional)</label>
+    <input id="net_gateway" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Services IP (optional)</label>
+    <input id="net_services_ip" class="input" type="text">
+  </div>
+
+  <button class="button is-primary" onclick="createNetwork()">Create</button>
+
+</div>
+<script>
+
+async function createNetwork() {
+
+    const networkname = document.getElementById("net_name").value.trim();
+    const subnet = document.getElementById("net_subnet").value.trim();
+    const prefix = document.getElementById("net_prefix").value.trim();
+    const gateway = document.getElementById("net_gateway").value.trim() || undefined;
+    const services_ip = document.getElementById("net_services_ip").value.trim() || undefined;
+
+    const payload = {
+        [networkname]: {
+            subnet: subnet,
+            prefix: prefix,
+            gateway: gateway,
+            services_ip: services_ip
+        }
+    };
+
+    await apiRequest("POST", "/api/v1/inventory/network", payload);
+    window.location.href = "/inventory/network/list";
+}
+</script>
+
+<script>
+
+function detectType(name) {
+    if (name.startsWith("fn_")) return "function";
+    if (name.startsWith("os_")) return "os";
+    if (name.startsWith("hw_")) return "hardware";
+    if (name.startsWith("rack_")) return "rack";
+    return "custom";
+}
+
+function fillSelect(id, items, allowEmpty = false) {
+    const select = document.getElementById(id);
+    select.innerHTML = "";
+
+    if (allowEmpty) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "(none)";
+        select.appendChild(opt);
+    }
+
+    items.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+    });
+}
+
+async function loadGroupsForPlaybook() {
+    const data = await apiRequest("GET", "/api/v1/inventory/group");
+    const groups = data.groups || {};
+
+    const functionGroups = [];
+
+    // Classify groups
+    for (const name of Object.keys(groups)) {
+        const type = detectType(name);
+        if (type === "function") functionGroups.push(name);
+    }
+
+    // Fill selects
+    fillSelect("playbook_group", functionGroups);
+
+}
+
+loadGroupsForPlaybook()
+</script>
+
+
+
+
+{% endblock %}

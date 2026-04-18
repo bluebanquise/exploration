@@ -1,0 +1,30 @@
+name: production_playbook
+title: playbook production
+description: Manage playbooks in the cluster production.
+version: "1.0.0"
+category: production
+
+api:
+  base_url: /api/v1/production/playbook
+
+# ui_integration:
+#   production:
+#     playbook:
+#       - name: List playbooks
+#         url: /production/playbook/list
+#       - name: Add new playbook
+#         url: /production/playbook/add
+
+ui_integration:
+  - name: production
+    sub_elements:
+      - name: playbook
+        title: playbooks
+        url: /production/playbook
+        sub_elements:
+        - name: list_playbooks
+          title: List playbooks
+          url: /production/playbook/list
+        - name: add_playbook
+          title: Add new playbook
+          url: /production/playbook/add
