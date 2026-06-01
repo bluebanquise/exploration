@@ -175,7 +175,7 @@ def create_app(config, logger):
 # ---------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
-        description="BlueBanquise Manager UI — REST API for plugins"
+        description="BlueBanquise Manager UI - REST API for plugins"
     )
 
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
@@ -204,4 +204,14 @@ def main():
 
 
 if __name__ == "__main__":
+
+
+   _,="( _  )"=,_
+_,'    \_>\_/    ',_
+.7,     {  }     ,\.
+ '/:,  .m  m.  ,:\'
+   ')",(/  \),"('
+      '{'!!'}'
+
+
     main()

@@ -1,0 +1,28 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Host details</h1>
+
+<div id="host-details"></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const hostname = "{{ hostname }}";
+
+  try {
+    const data = await apiRequest("GET", `/api/v1/inventory/host/${hostname}`);
+    const host = data.host[hostname];
+
+    const container = document.getElementById("host-details");
+
+    container.innerHTML = `
+      <h2 class="subtitle">Hostname: ${hostname}</h2>
+      <pre>${JSON.stringify(host, null, 2)}</pre>
+      <a class="button is-light" href="/inventory/host/list">Back to list</a>
+    `;
+  } catch (e) {
+    console.error("Failed to load host details:", e);
+  }
+});
+</script>
+{% endblock %}

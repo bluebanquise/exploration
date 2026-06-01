@@ -1,0 +1,4 @@
+networks:
+  net-admin:
+    subnet: 10.10.0.1
+    prefix: '16'

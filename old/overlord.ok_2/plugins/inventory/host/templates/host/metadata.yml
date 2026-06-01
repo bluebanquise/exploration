@@ -1,0 +1,12 @@
+name: inventory_host
+title: Host Inventory
+version: "1.0.0"
+
+ui:
+  menu:
+    section: inventory
+    entries:
+      - name: List hosts
+        url: inventory/host/list
+      - name: Add host
+        url: inventory/host/add

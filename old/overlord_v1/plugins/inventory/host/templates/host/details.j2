@@ -1,0 +1,122 @@
+{# plugins/inventory/host/templates/host/details.j2 #}
+
+<h1 class="title">Host: {{ hostname }}</h1>
+
+<div id="details-error" class="notification is-danger is-hidden"></div>
+<div id="details-ok" class="notification is-success is-hidden"></div>
+
+<form id="host-details-form">
+  <div class="field">
+    <label class="label">Hostname</label>
+    <div class="control">
+      <input class="input" type="text" value="{{ hostname }}" disabled>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Alias</label>
+    <div class="control">
+      <input class="input" type="text" id="alias" name="alias">
+    </div>
+  </div>
+
+  <div class="field is-grouped">
+    <div class="control">
+      <button class="button is-primary" type="submit">Save</button>
+    </div>
+    <div class="control">
+      <a class="button is-light" href="{{ url_for('inventory_host.host_list_page') }}">
+        Back to list
+      </a>
+    </div>
+  </div>
+</form>
+
+<hr>
+
+<h2 class="title is-5">Raw data</h2>
+<pre id="raw-data"></pre>
+
+<script>
+const hostname = "{{ hostname }}";
+
+async function loadHostDetails() {
+    const errorBox = document.getElementById("details-error");
+    const okBox = document.getElementById("details-ok");
+    const aliasInput = document.getElementById("alias");
+    const rawDataPre = document.getElementById("raw-data");
+
+    errorBox.classList.add("is-hidden");
+    errorBox.textContent = "";
+    okBox.classList.add("is-hidden");
+    okBox.textContent = "";
+
+    try {
+        const response = await fetch("/api/v1/inventory/host/" + encodeURIComponent(hostname));
+        const result = await response.json();
+
+        if (!response.ok || result.status !== "ok") {
+            errorBox.textContent = result.message || "Failed to load host";
+            errorBox.classList.remove("is-hidden");
+            return;
+        }
+
+        const hostWrapper = result.data && result.data.host ? result.data.host : {};
+        const host = hostWrapper[hostname] || {};
+
+        aliasInput.value = host.alias || "";
+        rawDataPre.textContent = JSON.stringify(host, null, 2);
+    } catch (e) {
+        errorBox.textContent = "Error loading host: " + e;
+        errorBox.classList.remove("is-hidden");
+    }
+}
+
+document.getElementById("host-details-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const errorBox = document.getElementById("details-error");
+    const okBox = document.getElementById("details-ok");
+    const aliasInput = document.getElementById("alias");
+
+    errorBox.classList.add("is-hidden");
+    errorBox.textContent = "";
+    okBox.classList.add("is-hidden");
+    okBox.textContent = "";
+
+    const alias = aliasInput.value.trim();
+
+    const payload = {};
+    payload.alias = alias || null;
+
+    try {
+        const response = await fetch("/api/v1/inventory/host/" + encodeURIComponent(hostname), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status !== "ok") {
+            showNotification("is-danger", result.message || "Operation failed");
+            errorBox.textContent = result.message || "Failed to update host";
+            errorBox.classList.remove("is-hidden");
+            return;
+        }
+
+        showNotification("is-success", "Host updated");
+        showNotification("is-success", result.message || "Operation successful");
+
+        okBox.textContent = result.message || "Host updated";
+        okBox.classList.remove("is-hidden");
+
+        await loadHostDetails();
+    } catch (e) {
+        errorBox.textContent = "Error updating host: " + e;
+        errorBox.classList.remove("is-hidden");
+    }
+});
+
+document.addEventListener("DOMContentLoaded", loadHostDetails);
+</script>

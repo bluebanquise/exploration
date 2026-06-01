@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title or "BlueBanquise Overlord" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='bulma.min.css') }}">
+  <style>
+  @keyframes toast-fade-in {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes toast-fade-out {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(20px); }
+  }
+
+  .toast-notification {
+    animation: toast-fade-in 0.4s ease-out forwards;
+  }
+
+  .toast-hide {
+    animation: toast-fade-out 0.4s ease-in forwards;
+  }
+  </style>
+</head>
+<body>
+  {% include "navbar.j2" %}
+
+  <section class="section" style="padding-top: 1rem;">
+    <div style="display: flex; align-items: flex-start;">
+      <div style="width: 250px; position: sticky; top: 1rem;">
+        {% include "menu.j2" %}
+      </div>
+
+      <div style="flex-grow: 1; margin-left: 2rem;">
+        {% block content %}
+        {% endblock %}
+      </div>
+    </div>
+  </section>
+
+  <div id="notification-container"
+       style="
+         position: fixed;
+         bottom: 1rem;
+         left: 0;
+         width: 100%;
+         display: flex;
+         justify-content: center;
+         pointer-events: none;
+         z-index: 9999;
+       ">
+  </div>
+
+  <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+</body>
+</html>

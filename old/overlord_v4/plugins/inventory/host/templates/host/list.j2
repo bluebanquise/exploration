@@ -1,0 +1,45 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Hosts coucou</h1>
+
+<table class="table is-fullwidth is-striped">
+  <thead>
+    <tr>
+      <th>Hostname</th>
+      <th>Alias</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="host-table-body">
+  </tbody>
+</table>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const data = await apiRequest("GET", "/api/v1/inventory/host");
+    const hosts = (data && data.hosts) || {};
+    const tbody = document.getElementById("host-table-body");
+    tbody.innerHTML = "";
+
+    Object.entries(hosts).forEach(([hostname, hostdata]) => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${hostname}</td>
+        <td>${hostdata.alias || ""}</td>
+        <td>
+          <a class="button is-small is-info" href="/inventory/host/details/${hostname}">Details</a>
+          <a class="button is-small is-danger" href="/inventory/host/delete/${hostname}">Delete</a>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    console.error("Failed to load hosts:", e);
+  }
+});
+</script>
+{% endblock %}

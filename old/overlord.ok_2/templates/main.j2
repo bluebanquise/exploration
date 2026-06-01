@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BlueBanquise Overlord</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='bulma.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='global.css') }}">
+
+</head>
+<body>
+
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+
+  {% include 'navbar.j2' %}
+
+<section class="section" style="padding-top: 1rem;">
+  <div style="display: flex; align-items: flex-start;">
+    <div style="width: 250px; position: sticky; top: 1rem;">
+      {% include 'menu.j2' %}
+    </div>
+
+    <div style="flex-grow: 1; margin-left: 2rem;">
+      {% block content %}
+      {# plugin pages will override this block #}
+      {% endblock %}
+    </div>
+  </div>
+</section>
+
+<div id="notification-container"
+     style="
+       position: fixed;
+       bottom: 1rem;
+       left: 0;
+       width: 100%;
+       display: flex;
+       justify-content: center;
+       pointer-events: none;
+       z-index: 9999;
+     ">
+</div>
+
+
+
+</body>
+
+
+
+</html>

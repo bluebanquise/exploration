@@ -1,0 +1,11 @@
+hw_equipment_type: server
+hw_specs:
+  cpu:
+    name: ''
+    cores: ''
+    cores_per_socket: ''
+    sockets: ''
+    threads_per_core: ''
+  gpu: ''
+hw_console: ''
+hw_board_authentication: ''

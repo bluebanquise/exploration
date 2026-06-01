@@ -1,0 +1,22 @@
+<aside class="menu">
+  {% if current_section in ui_skeleton %}
+    {% set section_content = ui_skeleton[current_section] %}
+    {% for title, items in section_content.items() %}
+      <p class="menu-label">
+        {{ title }}
+      </p>
+      <ul class="menu-list">
+        {% for item in items %}
+          {% set url = item.url if item.url.startswith('/') else '/' + item.url %}
+          <li>
+            <a href="{{ url }}">
+              {{ item.name }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+  {% else %}
+    <p>No menu entries for this section.</p>
+  {% endif %}
+</aside>

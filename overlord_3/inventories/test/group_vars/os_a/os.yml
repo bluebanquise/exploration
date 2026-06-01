@@ -1,0 +1,12 @@
+os_operating_system:
+  distribution: debian
+  distribution_version: '12'
+  distribution_major_version: '12'
+os_keyboard_layout: us
+os_system_language: en_US.UTF-8
+os_firewall: true
+os_access_control: enforcing
+os_admin_password_sha512: aa
+os_admin_ssh_keys: []
+os_partitioning: bb
+os_kernel_parameters: kernelparam

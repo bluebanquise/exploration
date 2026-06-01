@@ -1,6 +1,7 @@
 # Import inventory
 from core.inventory import Inventory, Host, Group
 import json
+import sys
 from . import logic
 
 def init(args, context):
@@ -13,7 +14,7 @@ def init(args, context):
     inventory = Inventory()
 
     if len(args) < 2:
-        logger.exception(f"This plugin needs at least 2 arguments.")
+        log.exception(f"This plugin needs at least 2 arguments.")
         sys.exit(1)
 
 

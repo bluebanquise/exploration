@@ -1,0 +1,73 @@
+{% extends "main.j2" %}
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">User</a> / Details</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">User details</h1>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">User Details: {{ name }}</h1>
+
+<div class="box" style="max-width: 700px;">
+
+  <div class="field">
+    <label class="label">User name</label>
+    <input id="user_name" class="input" type="text" value="{{ name }}" disabled>
+  </div>
+
+  <div class="field">
+    <label class="label">Uid (> 1200)</label>
+    <input id="user_uid" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Home path (if not provided, will be automatically set to /home/user_name)</label>
+    <input id="user_home" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">SSH authorized key (optional, will add a public key automatically)</label>
+    <input id="user_ssh_authorized_key" class="input" type="text">
+  </div>
+
+
+  <button class="button is-primary" onclick="saveUser()">Save</button>
+  <a class="button" href="/inventory/user/list">Cancel</a>
+
+</div>
+
+<script>
+async function loadUser() {
+    const data = await apiRequest("GET", "/api/v1/inventory/user/{{ name }}");
+    const user = data.users["{{ name }}"] || {};
+
+    document.getElementById("user_uid").value = user.uid || "";
+    document.getElementById("user_home").value = user.home || "";
+    document.getElementById("user_ssh_authorized_key").value = user.ssh_authorized_keys[0] || "";
+}
+
+async function saveUser() {
+
+    const uid = document.getElementById("user_uid").value.trim();
+    const home = document.getElementById("user_home").value.trim();
+    const ssh_authorized_key = document.getElementById("user_ssh_authorized_key").value.trim() || undefined;
+
+    const payload = {
+            name: "{{ name }}",
+            uid: uid,
+            home: home,
+            ssh_authorized_keys: [ssh_authorized_key]
+    };
+
+    await apiRequest("PUT", "/api/v1/inventory/user/{{ name }}", payload);
+    window.location.href = "/inventory/user/list";
+}
+
+loadUser();
+</script>
+
+{% endblock %}

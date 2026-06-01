@@ -2,7 +2,7 @@ from pathlib import Path
 from yaml import safe_load as yload , dump
 
 BB_INVENTORY_NAME = "bluebanquise"
-BB_INVENTORY_PATH = "bluebanquise" # str(Path.home()) + '/' + BB_INVENTORY_NAME
+BB_INVENTORY_PATH = "bluebanquise"
 WORKDIR = BB_INVENTORY_PATH
 BB_TMP_PATH = WORKDIR + "/.bbui"
 BB_CLUSTER_DIR_NAME = "inventory/cluster"
@@ -50,7 +50,6 @@ class Inventory() :
     
         if crawl:
             self.crawl_inventory()
-
 
     def crawl_inventory(self):
         p_inventory = self.p / BB_CLUSTER_DIR_NAME / BB_NODES_DIR_NAME

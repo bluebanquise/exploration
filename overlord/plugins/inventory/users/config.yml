@@ -1,0 +1,30 @@
+name: inventory_user
+title: user inventory
+description: Manage users in the cluster inventory.
+version: "1.0.0"
+category: inventory
+
+api:
+  base_url: /api/v1/inventory/user
+
+# ui_integration:
+#   inventory:
+#     user:
+#       - name: List users
+#         url: /inventory/user/list
+#       - name: Add new user
+#         url: /inventory/user/add
+
+ui_integration:
+  - name: inventory
+    sub_elements:
+      - name: user
+        title: users
+        url: /inventory/user
+        sub_elements:
+        - name: list_users
+          title: List users
+          url: /inventory/user/list
+        - name: add_user
+          title: Add new user
+          url: /inventory/user/add

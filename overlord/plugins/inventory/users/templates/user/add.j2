@@ -1,0 +1,65 @@
+{% extends "main.j2" %}
+
+
+{% block controlbar %}
+  <span style="color: var(--overlord-hover-accent); font-weight: bold;">Trace</span> 
+  <span style="margin-left: 8px;"><a href="/inventory">Inventory</a> / <a href="/inventory/group">User</a> / Add</span>
+{% endblock %}
+
+{% block headertitle %}
+  <h1 class="title is-4">Add User</h1>
+  <p class="subtitle is-6">Add a new user in the inventory.</p>
+{% endblock %}
+
+{% block content %}
+
+<div class="box" style="max-width: 700px;">
+
+  <h2 class="subtitle">User informations</h2>
+
+  <!-- Username -->
+  <div class="field">
+    <label class="label">User name</label>
+    <input id="user_name" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Uid (> 1200)</label>
+    <input id="user_uid" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">Home path (if not provided, will be automatically set to /home/user_name)</label>
+    <input id="user_home" class="input" type="text">
+  </div>
+
+  <div class="field">
+    <label class="label">SSH authorized key (optional, will add a public key automatically)</label>
+    <input id="user_ssh_authorized_key" class="input" type="text">
+  </div>
+
+  <button class="button is-primary" onclick="createUser()">Create</button>
+
+</div>
+<script>
+
+async function createUser() {
+
+    const name = document.getElementById("user_name").value.trim();
+    const uid = document.getElementById("user_uid").value.trim();
+    const home = document.getElementById("user_home").value.trim();
+    const ssh_authorized_key = document.getElementById("user_ssh_authorized_key").value.trim() || undefined;
+
+    const payload = {
+            name: name,
+            uid: uid,
+            home: home,
+            ssh_authorized_keys: [ssh_authorized_key]
+    };
+
+    await apiRequest("POST", "/api/v1/inventory/user", payload);
+    window.location.href = "/inventory/user/list";
+}
+</script>
+
+{% endblock %}

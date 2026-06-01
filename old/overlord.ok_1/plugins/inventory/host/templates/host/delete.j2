@@ -1,0 +1,100 @@
+{# plugins/inventory/host/templates/host/delete.j2 #}
+
+<h1 class="title">Delete a host</h1>
+
+<div id="delete-error" class="notification is-danger is-hidden"></div>
+
+<div class="field">
+  <label class="label">Select host to delete</label>
+  <div class="control">
+    <div class="select">
+      <select id="hostname-select">
+        <option value="">-- select a host --</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="field is-grouped">
+  <div class="control">
+    <button class="button is-danger" id="delete-button">Delete host</button>
+  </div>
+  <div class="control">
+    <a class="button is-light" href="{{ url_for('inventory_host.host_list_page') }}">Back to list</a>
+  </div>
+</div>
+
+<script>
+async function loadHostsForDelete() {
+    const select = document.getElementById("hostname-select");
+    select.innerHTML = '<option value="">-- select a host --</option>';
+
+    const errorBox = document.getElementById("delete-error");
+    errorBox.classList.add("is-hidden");
+    errorBox.textContent = "";
+
+    try {
+        const response = await fetch("/api/v1/inventory/host");
+        const result = await response.json();
+
+        if (!response.ok || result.status !== "ok") {
+            errorBox.textContent = result.message || "Failed to load hosts";
+            errorBox.classList.remove("is-hidden");
+            return;
+        }
+
+        const hosts = result.data && result.data.hosts ? result.data.hosts : {};
+        for (const hostname of Object.keys(hosts)) {
+            const opt = document.createElement("option");
+            opt.value = hostname;
+            opt.textContent = hostname;
+            select.appendChild(opt);
+        }
+    } catch (e) {
+        errorBox.textContent = "Error loading hosts: " + e;
+        errorBox.classList.remove("is-hidden");
+    }
+}
+
+document.getElementById("delete-button").addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    const errorBox = document.getElementById("delete-error");
+    errorBox.classList.add("is-hidden");
+    errorBox.textContent = "";
+
+    const select = document.getElementById("hostname-select");
+    const hostname = select.value;
+
+    if (!hostname) {
+        errorBox.textContent = "Please select a host to delete";
+        errorBox.classList.remove("is-hidden");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to delete host " + hostname + "?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/v1/inventory/host/" + encodeURIComponent(hostname), {
+            method: "DELETE"
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status !== "ok") {
+            errorBox.textContent = result.message || "Failed to delete host";
+            errorBox.classList.remove("is-hidden");
+            return;
+        }
+
+        await loadHostsForDelete();
+    } catch (e) {
+        errorBox.textContent = "Error deleting host: " + e;
+        errorBox.classList.remove("is-hidden");
+    }
+});
+
+document.addEventListener("DOMContentLoaded", loadHostsForDelete);
+</script>

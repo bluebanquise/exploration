@@ -1,0 +1,25 @@
+{% extends "main.j2" %}
+
+{% block content %}
+<h1 class="title">Delete host</h1>
+
+<p>Are you sure you want to delete host <strong>{{ hostname }}</strong>?</p>
+
+<div class="buttons">
+  <button id="delete-btn" class="button is-danger">Delete</button>
+  <a class="button" href="/inventory/host/list">Cancel</a>
+</div>
+
+<script>
+document.getElementById("delete-btn").addEventListener("click", async () => {
+  const hostname = "{{ hostname }}";
+
+  try {
+    await apiRequest("DELETE", `/api/v1/inventory/host/${hostname}`);
+    window.location.href = "/inventory/host/list";
+  } catch (e) {
+    console.error("Failed to delete host:", e);
+  }
+});
+</script>
+{% endblock %}
