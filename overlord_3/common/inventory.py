@@ -46,13 +46,15 @@ class AnsibleInventory:
 
     def __init__(
         self,
-        inventory_root: str,
+        inventories_root: str,
+        inventory_name: str,
         working_folder: str,
         diff: bool = False,
         check: bool = False,
         logger=None,
     ):
-        self.inventory_root = os.path.abspath(inventory_root)
+        relative_path = str(os.path.join(inventories_root, inventory_name))
+        self.inventory_root = os.path.abspath(relative_path)
         self.working_folder = os.path.abspath(working_folder)
         self.diff = diff
         self.check = check
@@ -162,8 +164,11 @@ class AnsibleInventory:
         return {'hosts': self.hosts, 'groups': self.groups}
 
     def show(self):
-        print(self.hosts)
-        print(self.groups)
+        print("############ HOSTS ############")
+        print(yaml.dump(self.hosts))
+        print("")
+        print("############ GROUPS ############")
+        print(yaml.dump(self.groups))
         return
 
     # #######################################
@@ -200,156 +205,173 @@ class AnsibleInventory:
             if name in self.groups[group]['hosts']:
                 self.groups[group]['hosts'].remove(name)
 
-    # # -------------------------
-    # # Group operations
-    # # -------------------------
+    # #######################################
+    # ##### Groups management
+    # ##
 
-    # def list_groups(self) -> Dict[str, Dict[str, Any]]:
-    #     return self.groups
+    def list_groups(self):
+        return self.groups
 
-    # def get_group(self, name: str) -> Optional[Dict[str, Any]]:
-    #     return self.groups.get(name)
+    def get_group(self, name):
+        return self.groups.get(name, None)
 
-    # def add_group(self, name: str, data) -> None:
-    #     if name in self.groups:
-    #         raise ValueError(f"Group {name} already exists")
-    #     self.groups[name] = {
-    #         "hosts": data.get("hosts", []),
-    #         "vars": data.get("vars", {})
-    #         }
+    def add_group(self, name, data):
+        if name in self.groups:
+            raise ValueError(f"Group {name} already exists")
+        self.groups[name] = {
+            "hosts": data.get("hosts", []),
+            "vars": data.get("vars", {})
+            }
 
-    # def update_group(
-    #     self,
-    #     name: str,
-    #     hosts: Optional[List[str]] = None,
-    #     vars_update: Optional[Dict[str, Dict[str, Any]]] = None,
-    # ) -> None:
-    #     if name not in self.groups:
-    #         raise ValueError(f"Group {name} does not exist")
-    #     group = self.groups[name]
-    #     if hosts is not None:
-    #         group["hosts"] = hosts
-    #     if vars_update:
-    #         for plugin_name, plugin_vars in vars_update.items():
-    #             existing = group["vars"].get(plugin_name, {})
-    #             existing.update(plugin_vars or {})
-    #             group["vars"][plugin_name] = existing
+    def update_group(self, name, hosts, vars):
+        if name not in self.groups:
+            raise ValueError(f"Group {name} does not exist")
+        if hosts is not None:
+            self.groups[name]['hosts'] = hosts
+        if vars is not None:
+            self.groups[name]['vars'].update(vars)
 
-    # def delete_group(self, name: str) -> None:
-    #     if name not in self.groups:
-    #         raise ValueError(f"Group {name} does not exist")
-    #     del self.groups[name]
+    def delete_group(self, name: str) -> None:
+        if name not in self.groups:
+            raise ValueError(f"Group {name} does not exist")
+        del self.groups[name]
 
-    # # -------------------------
-    # # Saving with diff/check
-    # # -------------------------
 
-    # def save(self) -> None:
-    #     """
-    #     Save inventory to disk.
+    # ####################################################################################
+    # ##### Save management
+    # ##
 
-    #     - Always writes to a temporary inventory tree under working_folder.
-    #     - If diff/check: run `diff -ruN old new` and print output.
-    #     - If check: do not overwrite original inventory.
-    #     - If not check: overwrite original inventory and remove temp dir.
-    #     """
-    #     tmp_dir = tempfile.mkdtemp(
-    #         prefix="overlord-inventory-new-",
-    #         dir=self.working_folder,
-    #     )
-    #     try:
-    #         # # Copy existing inventory root to tmp_dir
-    #         # if os.path.isdir(self.inventory_root):
-    #         #     dst_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
-    #         #     shutil.copytree(self.inventory_root, dst_root, dirs_exist_ok=True)
-    #         # else:
-    #         #     dst_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
-    #         #     os.makedirs(dst_root, exist_ok=True)
+    def save(self):
+        """
+        Save inventory to disk.
 
-    #         new_root = os.path.join(tmp_dir, os.path.basename(self.inventory_root))
-    #         os.makedirs(new_root, exist_ok=True)
-    #         # Write current in-memory state to new_root
-    #         self._write_inventory(new_root)
+        - Always writes to a temporary inventory tree under working_folder.
+        - If diff/check: run `diff -ruN old new` and print output.
+        - If check: do not overwrite original inventory.
+        - If not check: overwrite original inventory and remove temp dir.
+        """
+        tmp_dir = tempfile.mkdtemp(
+            prefix="overlord-temporary-inventory-",
+            dir=self.working_folder
+        )
+        try:
 
-    #         # Diff & overwrite
-    #         original_root = self.inventory_root
-    #         # new_root = dst_root
+            self.write_inventory(tmp_dir)
 
-    #         if self.diff or self.check:
-    #             self._print_diff(original_root, new_root)
-    #         if not self.check:
-    #             # Overwrite original with new_root content
-    #             if os.path.isdir(original_root):
-    #                 shutil.rmtree(original_root)
-    #             shutil.copytree(new_root, original_root)
+            if self.diff or self.check:
+                self.print_diff(self.inventory_root, tmp_dir)
+            if not self.check:
+                # Overwrite original with new_root content
+                if os.path.isdir(self.inventory_root):
+                    shutil.rmtree(self.inventory_root)
+                shutil.copytree(tmp_dir, self.inventory_root)
 
-    #     finally:
-    #         # Clean temp dir if overwrite occurred, otherwise leave for debugging?
-    #         if os.path.isdir(tmp_dir):
-    #             shutil.rmtree(tmp_dir, ignore_errors=True)
+        finally:
+            # Clean temp dir if overwrite occurred, otherwise leave for debugging?
+            if os.path.isdir(tmp_dir):
+                shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    # def _write_inventory(self, root: str) -> None:
-    #     # hosts.yml
-    #     hosts_yaml_path = os.path.join(root, "inventory", "cluster", "hosts.yml")
-    #     hosts_yaml = {"all": {"hosts": {}}}
-    #     for hostname, host_data in self.hosts.items():
-    #         entry: Dict[str, Any] = {}
-    #         if host_data.get("alias") is not None:
-    #             entry["alias"] = host_data["alias"]
-    #         if "network_interfaces" in host_data and host_data["network_interfaces"] is not None:
-    #             entry["network_interfaces"] = host_data["network_interfaces"]
-    #         if "bmc" in host_data and host_data["bmc"] is not None:
-    #             entry["bmc"] = host_data["bmc"]
-    #         hosts_yaml["all"]["hosts"][hostname] = entry
-    #     dump_yaml_file(hosts_yaml_path, hosts_yaml)
+    def write_inventory(self, root):
 
-    #     # host_vars
-    #     for hostname, host_data in self.hosts.items():
-    #         host_vars = host_data.get("vars") or {}
-    #         if host_vars:
-    #             hv_path = os.path.join(
-    #                 root, "inventory", "host_vars", hostname, "main.yml"
-    #             )
-    #             dump_yaml_file(hv_path, host_vars)
-    #         else:
-    #             # If no vars, we could remove existing host_vars file, but for now leave untouched
-    #             pass
+        # ## hosts ##
+        # Sort hosts by fn groups
+        hosts_fn_dict = {}
+        for hostname in self.hosts:
+            host_fn_group = None
+            for group in self.groups:
+                if group.startswith('fn_'):
+                    if hostname in self.groups[group]['hosts']:
+                        host_fn_group = group
+                        break
+            if host_fn_group is None:
+                host_fn_group = 'orphan'
+            if not host_fn_group in hosts_fn_dict:
+                hosts_fn_dict[host_fn_group] = []
+            print(hostname)
+            hosts_fn_dict[host_fn_group].append(hostname)
+        print(hosts_fn_dict)
+        
+        # Ok now, lets write these files one by one
+        for fn_group in hosts_fn_dict:
+            hosts_yaml_path = os.path.join(root, "cluster", "hosts", fn_group + ".yml")
+            hosts_yaml = {"all": {"hosts": {}}}
+            for hostname in hosts_fn_dict[fn_group]:
+                host_data = self.hosts[hostname]
+                entry = {}
+                if isinstance(host_data, dict):
+                    if host_data.get("alias", None) is not None:
+                        entry["alias"] = host_data["alias"]
+                    if host_data.get("network_interfaces", None) is not None:
+                        entry["network_interfaces"] = host_data["network_interfaces"]
+                    if host_data.get("bmc", None) is not None:
+                        entry["bmc"] = host_data["bmc"]
+                hosts_yaml["all"]["hosts"][hostname] = entry
+            dump_yaml_file(hosts_yaml_path, hosts_yaml)
 
-    #     # groups ini + group_vars
-    #     groups_dir = os.path.join(root, "inventory", "cluster", "groups")
-    #     os.makedirs(groups_dir, exist_ok=True)
+        # host_vars
+        for hostname, host_data in self.hosts.items():
+            if isinstance(host_data, dict):
+                host_vars = host_data.copy()
+                # Filter already written values
+                if "alias" in host_vars:
+                    del host_vars["alias"]
+                if "network_interfaces" in host_vars:
+                    del host_vars["network_interfaces"]
+                if "bmc" in host_vars:
+                    del host_vars["bmc"]
+                if len(host_vars) > 0:
+                    hv_path = os.path.join(
+                        root, "host_vars", hostname, "main.yml"
+                    )
+                    dump_yaml_file(hv_path, host_vars)
 
-    #     for group_name, group_data in self.groups.items():
-    #         ini_path = os.path.join(groups_dir, f"{group_name}.ini")
-    #         hosts_list = group_data.get("hosts", [])
+        # ## groups ##
 
-    #         lines = [f"[{group_name}]"]
-    #         for h in hosts_list:
-    #             lines.append(h)
-    #         content = "\n".join(lines) + "\n"
+        groups_dir = os.path.join(root, "cluster", "groups")
+        os.makedirs(groups_dir, exist_ok=True)
 
-    #         with open(ini_path, "w", encoding="utf-8") as f:
-    #             f.write(content)
+        for group_name, group_data in self.groups.items():
 
-    #         gv_dir = os.path.join(root, "inventory", "group_vars", group_name)
-    #         vars_dict = group_data.get("vars") or {}
-    #         for plugin_name, plugin_vars in vars_dict.items():
-    #             if not plugin_vars:
-    #                 continue
-    #             plugin_path = os.path.join(gv_dir, f"{plugin_name}.yml")
-    #             dump_yaml_file(plugin_path, plugin_vars)
+            # groups ini
+            ini_path = os.path.join(groups_dir, f"{group_name}.ini")
+            hosts_list = group_data.get("hosts", [])
 
-    # def _print_diff(self, old_root: str, new_root: str) -> None:
-    #     try:
-    #         result = subprocess.run(
-    #             ["diff", "-ruN", old_root, new_root],
-    #             capture_output=True,
-    #             text=True,
-    #         )
-    #         if result.stdout:
-    #             print(result.stdout)
-    #         if result.stderr and self.logger:
-    #             self.logger.warning("diff stderr: %s", result.stderr.strip())
-    #     except FileNotFoundError:
-    #         if self.logger:
-    #             self.logger.error("diff binary not found; cannot show diff")
+            lines = [f"[{group_name}]"]
+            for h in hosts_list:
+                lines.append(h)
+            content = "\n".join(lines) + "\n"
+
+            with open(ini_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+            # groups vars
+            gv_dir = os.path.join(root, "group_vars", group_name)
+            vars_dict = group_data.get("vars") or {}
+            # Plugins should have their values behind a prefix "plugin_"
+            # We write plugins into a dedicated files, everything else goes to main.yml
+            vars_dict_buffer = vars_dict.copy()
+            for key_name in vars_dict_buffer:
+                if key_name.startswith("plugin_"):
+                    plugin_path = os.path.join(gv_dir, f"{key_name}.yml")
+                    dump_yaml_file(plugin_path, vars_dict[key_name])
+                    del vars_dict[key_name]
+            # Now that all plugins are written, lets write the remains
+            if len(vars_dict) > 0:
+                main_path = os.path.join(gv_dir, "main.yml")
+                dump_yaml_file(main_path, vars_dict[key_name])
+                
+
+    def print_diff(self, old_root, new_root):
+        try:
+            result = subprocess.run(
+                ["diff", "-ruN", old_root, new_root],
+                capture_output=True,
+                text=True,
+            )
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr and self.logger:
+                self.logger.warning("diff stderr: %s", result.stderr.strip())
+        except FileNotFoundError:
+            if self.logger:
+                self.logger.error("diff binary not found; cannot show diff")
