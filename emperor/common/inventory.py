@@ -100,12 +100,9 @@ class AnsibleInventory:
             hosts_section = all_section.get("hosts", {}) or {}
             data.update(hosts_section)
 
-        print(data)
-
         # Check if an host posses specific hostvars
         for hostname in data:
 
-            print("Working on host " + hostname)
             hv_path = os.path.join(
                 self.inventory_root, "host_vars", hostname, "main.yml"
             )
@@ -180,7 +177,7 @@ class AnsibleInventory:
     # ##### Hosts management
     # ##
 
-    def list_hosts(self):
+    def get_hosts(self):
         return self.hosts
 
     def get_host(self, name):
@@ -214,7 +211,7 @@ class AnsibleInventory:
     # ##### Groups management
     # ##
 
-    def list_groups(self):
+    def get_groups(self):
         return self.groups
 
     def get_group(self, name):
@@ -365,7 +362,7 @@ class AnsibleInventory:
             # Now that all plugins are written, lets write the remains
             if len(vars_dict) > 0:
                 main_path = os.path.join(gv_dir, "main.yml")
-                dump_yaml_file(main_path, vars_dict[key_name])
+                dump_yaml_file(main_path, vars_dict)
                 
 
     def print_diff(self, old_root, new_root):
