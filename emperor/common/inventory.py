@@ -53,6 +53,8 @@ class AnsibleInventory:
         check: bool = False,
         logger=None,
     ):
+        self.inventories_root = inventories_root
+        self.inventory_name = inventory_name
         relative_path = str(os.path.join(inventories_root, inventory_name))
         self.inventory_root = os.path.abspath(relative_path)
         self.working_folder = os.path.abspath(working_folder)
@@ -149,7 +151,10 @@ class AnsibleInventory:
                     plugin_name = os.path.splitext(plugin_file)[0]
                     plugin_path = os.path.join(gv_dir, plugin_file)
                     plugin_vars = load_yaml_file(plugin_path) or {}
-                    group_vars[plugin_name] = plugin_vars
+                    if plugin_name != "main":
+                        group_vars[plugin_name] = plugin_vars
+                    else:
+                        group_vars.update(plugin_vars)
 
             self.groups[group_name] = {
                 "hosts": hosts_list,
@@ -271,6 +276,8 @@ class AnsibleInventory:
             if os.path.isdir(tmp_dir):
                 shutil.rmtree(tmp_dir, ignore_errors=True)
 
+        self.commit_change()
+
     def write_inventory(self, root):
 
         # ## hosts ##
@@ -375,3 +382,16 @@ class AnsibleInventory:
         except FileNotFoundError:
             if self.logger:
                 self.logger.error("diff binary not found; cannot show diff")
+
+    def commit_change(self):
+        print("Now I need to git commit the changes.")
+        try:
+            git_command = "git --git-dir=" + os.path.abspath(self.inventories_root) + "/.git/ --work-tree=" + os.path.abspath(self.inventories_root) + "/ commit -a -m " + "'Updating inventory " + str(self.inventory_name) + "'"
+            cmd_call = subprocess.Popen(git_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            stdout, stderr = cmd_call.communicate()
+            exit_code = cmd_call.returncode
+            if exit_code == 0:
+                print("Commit went well.")
+        except Exception as e:
+            print("Error I could not commit the changes.")
+            print(e)

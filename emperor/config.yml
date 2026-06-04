@@ -1,0 +1,10 @@
+inventories_root: /home/oxedions/tmp_devs/inventories/
+working_folder: /tmp/emperor/
+inventory_name: test
+#log_file: /var/log/bluebanquise-overlord.log
+log_level: DEBUG
+plugins_path: ./plugins
+
+ui:
+  host: 0.0.0.0
+  port: 5000
