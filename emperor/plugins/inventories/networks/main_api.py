@@ -59,12 +59,23 @@ class NetworksRootResource(Resource):
         }
         """
 
-        network_skeleton = {
+        network_skeleton_admin = {
             'subnet': "",
-            'prefix': ""
+            'prefix': "",
+            'gateway': "",
+            'services_ip': ""
         }
 
         data = request.get_json(force=True, silent=True)
+
+        # Check and apply skeleton if admin
+        for network in data:
+            if 'subnet' not in data[network]:
+                return {"status": "Error", "message": "The emperor says: missing mandatory subnet for network"}, 400
+            if 'prefix' not in data[network]:
+                return {"status": "Error", "message": "The emperor says: missing mandatory prefix for network"}, 400
+            if network.startswith('net-'):
+                data[network] = network_skeleton_admin | data[network]
 
         inventory = load_inventory()
         all_vars = inventory.get_group('all')['vars']
@@ -72,8 +83,7 @@ class NetworksRootResource(Resource):
         inventory.update_group('all', None, all_vars)
         inventory.save()
 
-        return {"status": "OK", "message": "Network added"}, 200
-
+        return {"status": "OK", "message": "The emperor says: network added"}, 200
 
 class NetworkResource(Resource):
     def get(self, network_name):
@@ -84,7 +94,7 @@ class NetworkResource(Resource):
         if network_name in networks:
             return networks[network_name], 200
         else:
-            return {"status": "Error", "message": "Network not found"}, 400
+            return {"status": "Error", "message": "The emperor says: network not found"}, 400
 
     def put(self, network_name):
         """
@@ -103,7 +113,7 @@ class NetworkResource(Resource):
         inventory.update_group('all', None, all_vars)
         inventory.save()
 
-        return {"status": "OK", "message": "Network updated"}, 200
+        return {"status": "OK", "message": "The emperor says: network updated"}, 200
 
     def delete(self, network_name: str):
 
@@ -113,7 +123,7 @@ class NetworkResource(Resource):
         inventory.update_group('all', None, all_vars)
         inventory.save()
 
-        return {"status": "OK", "message": "Network deleted"}, 200
+        return {"status": "OK", "message": "The emperor says: network deleted"}, 200
 
 
 api.add_resource(NetworksRootResource, "/api/v1/inventory/networks")

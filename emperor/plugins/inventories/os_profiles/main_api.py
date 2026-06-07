@@ -34,77 +34,130 @@ def load_inventory() -> AnsibleInventory:
     return inventory
 
 
-class OsProfilesRootResource(Resource):
+class OSProfilesRootResource(Resource):
+
     def get(self):
         inventory = load_inventory()
         os_profiles = {}
-        for group, group_data in inventory.get_groups():
+        for group, group_data in inventory.get_groups().items():
             if group.startswith('os_'):
                 os_profiles[group] = group_data
 
         return os_profiles, 200
 
+
     def post(self):
         """
         Payload expected:
         {
-          "os_ubuntu_24.04_A": {
-            "os_operating_system...
-            ...
-          }
+          "os_ubuntu_24.04_A":
+            hosts: [],
+            vars: {
+                {
+                    "os_operating_system...
+                    ...
+                }
+            }
         }
         """
         data = request.get_json(force=True, silent=True)
-
         inventory = load_inventory()
-        all_vars = inventory.get_group('all')['vars']
-        all_vars['plugin_networks']['networks'].update(data)
-        inventory.update_group('all', None, all_vars)
+
+        os_profile_skeleton = {
+            "os_operating_system": {
+                "distribution": "ubuntu",
+                "distribution_version": "24.04",
+                "distribution_major_version": "24"
+            },
+            "os_keyboard_layout": "us",
+            "os_system_language": "en_US.UTF-8",
+            "os_firewall": True,
+            "os_access_control": "enforcing",
+            "os_admin_password_sha512": "",
+            "os_admin_ssh_keys": [],
+            "os_partitioning": "",
+            "os_kernel_parameters": "nomodeset"
+            }
+
+        for os_profile, os_profile_data in data.items():
+            if not os_profile.startswith('os_'):
+                return {"status": "Error", "message": "The emperor says: OS profile names must start with os_ prefix"}, 200
+            os_profile_data_buffer = {}
+            if 'hosts' not in os_profile_data:
+                os_profile_data_buffer['hosts'] = []
+            else:
+                os_profile_data_buffer['hosts'] = os_profile_data['hosts']
+            if 'vars' not in os_profile_data:
+                os_profile_data_buffer['vars'] = os_profile_skeleton
+            else:
+                os_profile_data_buffer['vars'] = os_profile_skeleton | os_profile_data['vars']
+            inventory.add_group(os_profile, os_profile_data_buffer)
+
         inventory.save()
+        return {"status": "OK", "message": "The emperor says: OS profile added"}, 200
 
-        return {"status": "OK", "message": "Network added"}, 200
+
+class OSProfileResource(Resource):
 
 
-class OsProfileResource(Resource):
-    def get(self, network_name):
+    def get(self, os_profile_name):
 
         inventory = load_inventory()
-        networks = inventory.get_group('all')['vars']['plugin_networks']['networks']
+        os_profiles = {}
+        for group, group_data in inventory.get_groups().items():
+            if group.startswith('os_'):
+                os_profiles[group] = group_data
+        if os_profile_name not in os_profiles:
+            return {"status": "Error", "message": "The emperor says: OS profile not found"}, 400
 
-        if network_name in networks:
-            return networks[network_name], 200
-        else:
-            return {"status": "Error", "message": "Network not found"}, 400
+        return os_profiles[os_profile_name], 200
 
-    def put(self, network_name):
+
+    def put(self, os_profile_name):
         """
         Payload expected:
           {
-            "subnet": "10.10.0.0",
-            ...
+            hosts: [],
+            vars: {
+                {
+                    "os_operating_system...
+                    ...
+                }
+            }
           }
         """
 
         data = request.get_json(force=True, silent=True)
 
         inventory = load_inventory()
-        all_vars = inventory.get_group('all')['vars']
-        all_vars['plugin_networks']['networks'][network_name].update(data)
-        inventory.update_group('all', None, all_vars)
+        os_profiles = {}
+        for group, group_data in inventory.get_groups().items():
+            if group.startswith('os_'):
+                os_profiles[group] = group_data
+        if os_profile_name not in os_profiles:
+            return {"status": "Error", "message": "The emperor says: OS profile not found"}, 400
+
+        inventory.update_group(os_profile_name, data.get('hosts', []), data.get('vars', {}))
         inventory.save()
 
-        return {"status": "OK", "message": "Network updated"}, 200
+        return {"status": "OK", "message": "The emperor says: Group updated"}, 200
 
-    def delete(self, network_name: str):
+
+    def delete(self, os_profile_name: str):
 
         inventory = load_inventory()
-        all_vars = inventory.get_group('all')['vars']
-        del all_vars['plugin_networks']['networks'][network_name]
-        inventory.update_group('all', None, all_vars)
+        os_profiles = {}
+        for group, group_data in inventory.get_groups().items():
+            if group.startswith('os_'):
+                os_profiles[group] = group_data
+        if os_profile_name not in os_profiles:
+            return {"status": "Error", "message": "The emperor says: OS profile not found"}, 400
+
+        inventory.delete_group(os_profile_name)
         inventory.save()
 
-        return {"status": "OK", "message": "Network deleted"}, 200
+        return {"status": "OK", "message": "The emperor says: Group delete"}, 200
 
 
-api.add_resource(OsProfilesRootResource, "/api/v1/inventory/os_profiles")
-api.add_resource(OsProfileResource, "/api/v1/inventory/os_profile/<string:network_name>")
+api.add_resource(OSProfilesRootResource, "/api/v1/inventory/os_profiles")
+api.add_resource(OSProfileResource, "/api/v1/inventory/os_profile/<string:os_profile_name>")
